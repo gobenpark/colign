@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 import { workflowClient } from "@/lib/workflow";
 import { WorkflowPanel } from "@/components/change/workflow-panel";
 import { DocumentTab } from "@/components/change/document-tab";
@@ -34,18 +35,19 @@ const stages = ["draft", "design", "review", "ready"];
 
 type TabId = "workflow" | "proposal" | "design" | "specs" | "tasks";
 
-const tabs: { id: TabId; label: string }[] = [
-  { id: "workflow", label: "Workflow" },
-  { id: "proposal", label: "Proposal" },
-  { id: "design", label: "Design" },
-  { id: "specs", label: "Specs" },
-  { id: "tasks", label: "Tasks" },
-];
+const tabI18nKeys: Record<TabId, string> = {
+  workflow: "change.workflow",
+  proposal: "change.proposal",
+  design: "change.design",
+  specs: "change.specs",
+  tasks: "change.tasks",
+};
 
 export default function ChangeDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
   const changeId = BigInt(params.changeId as string);
+  const { t } = useI18n();
 
   const [activeTab, setActiveTab] = useState<TabId>("workflow");
   const [chatOpen, setChatOpen] = useState(false);
@@ -115,7 +117,7 @@ export default function ChangeDetailPage() {
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
             </svg>
-            AI Chat
+            {t("change.aiChat")}
           </Button>
         </div>
       </header>
@@ -143,7 +145,7 @@ export default function ChangeDetailPage() {
                           </svg>
                         </div>
                         <span className={`mt-1.5 text-[11px] font-medium ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
-                          {cfg.label}
+                          {t(`stages.${s}`)}
                         </span>
                       </div>
                       {i < stages.length - 1 && (
@@ -157,17 +159,17 @@ export default function ChangeDetailPage() {
 
             {/* Tab Navigation */}
             <div className="mb-6 flex gap-1 overflow-x-auto border-b border-border/50">
-              {tabs.map((tab) => (
+              {(Object.keys(tabI18nKeys) as TabId[]).map((tabId) => (
                 <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  key={tabId}
+                  onClick={() => setActiveTab(tabId)}
                   className={`cursor-pointer whitespace-nowrap px-4 py-2.5 text-sm font-medium transition-colors duration-200 ${
-                    activeTab === tab.id
+                    activeTab === tabId
                       ? "border-b-2 border-primary text-foreground"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {tab.label}
+                  {t(tabI18nKeys[tabId])}
                 </button>
               ))}
             </div>
@@ -210,7 +212,7 @@ export default function ChangeDetailPage() {
             <div className="flex h-full flex-col">
               <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-medium">AI Chat</h3>
+                  <h3 className="text-sm font-medium">{t("change.aiChat")}</h3>
                   <span className="inline-flex h-4 items-center rounded-full bg-primary/10 px-1.5 text-[10px] font-medium text-primary">
                     AI
                   </span>

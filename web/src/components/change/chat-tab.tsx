@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/lib/i18n";
 
 interface ChatMessage {
   id: string;
@@ -16,10 +17,10 @@ interface ChatTabProps {
 
 export function ChatTab({ changeId }: ChatTabProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { t } = useI18n();
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  // changeId will be used when connecting to the real API
   void changeId;
 
   useEffect(() => {
@@ -73,9 +74,9 @@ export function ChatTab({ changeId }: ChatTabProps) {
         {messages.length === 0 && (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
-              <p className="text-lg font-medium text-muted-foreground">Start a conversation</p>
+              <p className="text-lg font-medium text-muted-foreground">{t("change.startConversation")}</p>
               <p className="mt-1 text-sm text-muted-foreground/70">
-                Discuss requirements, ask for spec suggestions, or brainstorm features with AI
+                {t("change.chatDescription")}
               </p>
             </div>
           </div>
@@ -93,7 +94,7 @@ export function ChatTab({ changeId }: ChatTabProps) {
               {msg.role === "assistant" && msg.content && !isStreaming && (
                 <div className="mt-2 flex gap-1">
                   <Button variant="ghost" size="sm" className="h-6 cursor-pointer px-2 text-xs text-muted-foreground hover:text-foreground">
-                    Apply to Spec
+                    {t("change.applyToSpec")}
                   </Button>
                 </div>
               )}
@@ -118,12 +119,12 @@ export function ChatTab({ changeId }: ChatTabProps) {
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Discuss spec requirements with AI..."
+            placeholder={t("change.chatPlaceholder")}
             disabled={isStreaming}
             className="flex-1"
           />
           <Button type="submit" disabled={isStreaming || !input.trim()} className="cursor-pointer">
-            Send
+            {t("common.send")}
           </Button>
         </form>
       </div>

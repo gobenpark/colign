@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/lib/i18n";
 
 interface GateCondition {
   name: string;
@@ -37,6 +38,7 @@ const stageConfig: Record<string, { label: string; color: string }> = {
 };
 
 export function WorkflowPanel({ stage, conditions, history, onApprove, onRequestChanges, onRevert }: WorkflowPanelProps) {
+  const { t } = useI18n();
   const [revertReason, setRevertReason] = useState("");
   const [showRevert, setShowRevert] = useState(false);
   const currentConfig = stageConfig[stage] ?? stageConfig.draft;
@@ -47,8 +49,8 @@ export function WorkflowPanel({ stage, conditions, history, onApprove, onRequest
         <Card className="border-border/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <span className={currentConfig.color}>{currentConfig.label}</span>
-              Gate Conditions
+              <span className={currentConfig.color}>{t(`stages.${stage}`)}</span>
+              {t("change.gateConditions")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -74,18 +76,18 @@ export function WorkflowPanel({ stage, conditions, history, onApprove, onRequest
             <div className="flex flex-wrap gap-2">
               {stage === "review" && (
                 <>
-                  <Button onClick={onApprove} size="sm" className="cursor-pointer">Approve</Button>
-                  <Button onClick={onRequestChanges} variant="outline" size="sm" className="cursor-pointer">Request Changes</Button>
+                  <Button onClick={onApprove} size="sm" className="cursor-pointer">{t("change.approve")}</Button>
+                  <Button onClick={onRequestChanges} variant="outline" size="sm" className="cursor-pointer">{t("change.requestChanges")}</Button>
                 </>
               )}
               {stage !== "draft" && (
-                <Button variant="ghost" size="sm" className="cursor-pointer text-muted-foreground" onClick={() => setShowRevert(!showRevert)}>Revert</Button>
+                <Button variant="ghost" size="sm" className="cursor-pointer text-muted-foreground" onClick={() => setShowRevert(!showRevert)}>{t("change.revert")}</Button>
               )}
             </div>
             {showRevert && (
               <div className="mt-3 flex gap-2">
-                <Input placeholder="Reason for reverting..." value={revertReason} onChange={(e) => setRevertReason(e.target.value)} className="flex-1" />
-                <Button onClick={() => { onRevert(revertReason); setShowRevert(false); setRevertReason(""); }} size="sm" disabled={!revertReason.trim()} className="cursor-pointer">Confirm</Button>
+                <Input placeholder={t("change.revertReason")} value={revertReason} onChange={(e) => setRevertReason(e.target.value)} className="flex-1" />
+                <Button onClick={() => { onRevert(revertReason); setShowRevert(false); setRevertReason(""); }} size="sm" disabled={!revertReason.trim()} className="cursor-pointer">{t("common.confirm")}</Button>
               </div>
             )}
           </CardContent>
@@ -93,10 +95,10 @@ export function WorkflowPanel({ stage, conditions, history, onApprove, onRequest
       </div>
       <div>
         <Card className="border-border/50">
-          <CardHeader><CardTitle className="text-base">History</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">{t("change.history")}</CardTitle></CardHeader>
           <CardContent>
             {history.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No events yet</p>
+              <p className="text-sm text-muted-foreground">{t("change.noEvents")}</p>
             ) : (
               <ul className="space-y-4">
                 {history.map((event) => (
