@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package workflow.v1;
 
-option go_package = "github.com/gobenpark/CoSpec/gen/proto/workflow/v1;workflowv1";
+option go_package = "github.com/gobenpark/colign/gen/proto/workflow/v1;workflowv1";
 
 import "google/protobuf/timestamp.proto";
 

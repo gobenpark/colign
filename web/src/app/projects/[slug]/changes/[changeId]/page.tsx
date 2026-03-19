@@ -93,7 +93,7 @@ export default function ChangeDetailPage() {
         <div className="flex items-center justify-between px-6 py-3">
           <div className="flex items-center gap-3">
             <Link href="/projects" className="text-xl font-bold tracking-tight">
-              Co<span className="text-primary">Spec</span>
+              Co<span className="text-primary">lign</span>
             </Link>
             <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.25 4.5l7.5 7.5-7.5 7.5" />

@@ -1,4 +1,4 @@
-module github.com/gobenpark/CoSpec
+module github.com/gobenpark/colign
 
 go 1.26.0
 

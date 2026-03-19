@@ -5,11 +5,11 @@ import (
 	"errors"
 
 	"connectrpc.com/connect"
-	workflowv1 "github.com/gobenpark/CoSpec/gen/proto/workflow/v1"
-	"github.com/gobenpark/CoSpec/gen/proto/workflow/v1/workflowv1connect"
+	workflowv1 "github.com/gobenpark/colign/gen/proto/workflow/v1"
+	"github.com/gobenpark/colign/gen/proto/workflow/v1/workflowv1connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/gobenpark/CoSpec/internal/models"
+	"github.com/gobenpark/colign/internal/models"
 	"github.com/uptrace/bun"
 )
 

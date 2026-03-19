@@ -71,7 +71,7 @@ export default function AuthPage() {
         {/* Logo */}
         <div className="text-center">
           <h1 className="text-4xl font-bold tracking-tight">
-            Co<span className="text-primary">Spec</span>
+            Co<span className="text-primary">lign</span>
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             AI-powered Spec-Driven Development

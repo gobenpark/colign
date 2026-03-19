@@ -22,7 +22,7 @@ func Load() (*Config, error) {
 	return &Config{
 		Port:               getEnv("PORT", "8080"),
 		Debug:              getEnv("DEBUG", "") != "",
-		DatabaseURL:        getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/cospec?sslmode=disable"),
+		DatabaseURL:        getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/colign?sslmode=disable"),
 		RedisURL:           getEnv("REDIS_URL", "redis://localhost:6379"),
 		JWTSecret:          getEnv("JWT_SECRET", "dev-secret-change-in-production"),
 		ClaudeAPIKey:       getEnv("CLAUDE_API_KEY", ""),

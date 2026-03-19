@@ -5,9 +5,9 @@ import (
 	"errors"
 
 	"connectrpc.com/connect"
-	projectv1 "github.com/gobenpark/CoSpec/gen/proto/project/v1"
-	"github.com/gobenpark/CoSpec/gen/proto/project/v1/projectv1connect"
-	"github.com/gobenpark/CoSpec/internal/models"
+	projectv1 "github.com/gobenpark/colign/gen/proto/project/v1"
+	"github.com/gobenpark/colign/gen/proto/project/v1/projectv1connect"
+	"github.com/gobenpark/colign/internal/models"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

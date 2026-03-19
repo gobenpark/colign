@@ -6,7 +6,7 @@
 
 ---
 
-**Project:** CoSpec
+**Project:** Colign
 **Generated:** 2026-03-19 17:41:50
 **Category:** Developer Tool / IDE
 

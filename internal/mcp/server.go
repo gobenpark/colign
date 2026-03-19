@@ -53,7 +53,7 @@ func (s *Server) handleRequest(req JSONRPCRequest) JSONRPCResponse {
 					"tools": map[string]any{},
 				},
 				"serverInfo": map[string]any{
-					"name":    "cospec-mcp",
+					"name":    "colign-mcp",
 					"version": "0.1.0",
 				},
 			},

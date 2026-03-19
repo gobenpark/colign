@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package project.v1;
 
-option go_package = "github.com/gobenpark/CoSpec/gen/proto/project/v1;projectv1";
+option go_package = "github.com/gobenpark/colign/gen/proto/project/v1;projectv1";
 
 import "google/protobuf/timestamp.proto";
 

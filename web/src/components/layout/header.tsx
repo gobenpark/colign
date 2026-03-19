@@ -23,7 +23,7 @@ export function Header({ breadcrumbs = [], actions }: HeaderProps) {
       <div className="flex items-center justify-between px-6 py-3">
         <div className="flex items-center gap-3">
           <Link href="/projects" className="text-xl font-bold tracking-tight">
-            Co<span className="text-primary">Spec</span>
+            Co<span className="text-primary">lign</span>
           </Link>
           {breadcrumbs.map((crumb, i) => (
             <div key={i} className="flex items-center gap-3">

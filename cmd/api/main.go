@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gobenpark/CoSpec/internal/config"
-	"github.com/gobenpark/CoSpec/internal/database"
-	"github.com/gobenpark/CoSpec/internal/server"
+	"github.com/gobenpark/colign/internal/config"
+	"github.com/gobenpark/colign/internal/database"
+	"github.com/gobenpark/colign/internal/server"
 )
 
 func main() {

@@ -41,7 +41,7 @@ export default function NewProjectPage() {
       <header className="sticky top-0 z-30 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center px-6 py-4">
           <Link href="/projects" className="text-xl font-bold tracking-tight">
-            Co<span className="text-primary">Spec</span>
+            Co<span className="text-primary">lign</span>
           </Link>
         </div>
       </header>

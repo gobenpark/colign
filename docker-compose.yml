@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: cospec
+      POSTGRES_DB: colign
     ports:
       - "5432:5432"
     volumes:
@@ -26,7 +26,7 @@ services:
       - "8080:8080"
     environment:
       PORT: "8080"
-      DATABASE_URL: "postgres://postgres:postgres@postgres:5432/cospec?sslmode=disable"
+      DATABASE_URL: "postgres://postgres:postgres@postgres:5432/colign?sslmode=disable"
       REDIS_URL: "redis://redis:6379"
       JWT_SECRET: "dev-secret-change-in-production"
       FRONTEND_URL: "http://localhost:3000"

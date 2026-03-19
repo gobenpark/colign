@@ -3,7 +3,7 @@ package project
 import (
 	"fmt"
 
-	"github.com/gobenpark/CoSpec/internal/models"
+	"github.com/gobenpark/colign/internal/models"
 )
 
 var validRoles = map[string]models.Role{

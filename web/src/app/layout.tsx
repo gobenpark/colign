@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CoSpec - AI-powered Spec Writing",
+  title: "Colign - AI-powered Spec Writing",
   description:
     "Collaborative Spec-Driven Development platform where developers and non-developers write specs with AI.",
 };

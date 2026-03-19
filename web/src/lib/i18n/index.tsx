@@ -18,7 +18,7 @@ const I18nContext = createContext<I18nContextType | null>(null);
 
 function getStoredLocale(): Locale {
   if (typeof window === "undefined") return "en";
-  return (localStorage.getItem("cospec_locale") as Locale) || "en";
+  return (localStorage.getItem("colign_locale") as Locale) || "en";
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
@@ -26,7 +26,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
-    localStorage.setItem("cospec_locale", newLocale);
+    localStorage.setItem("colign_locale", newLocale);
   }, []);
 
   const t = useCallback(

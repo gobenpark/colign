@@ -1,4 +1,12 @@
-.PHONY: proto build run test lint clean dev
+.PHONY: setup proto build run test lint clean dev
+
+# Initial setup
+setup:
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
+	cd web && npm install
+	cd hocuspocus && npm install
+	$(MAKE) proto
 
 # Proto generation
 proto:

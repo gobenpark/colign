@@ -8,8 +8,8 @@ const transport = createConnectTransport({
 
 export const authClient = createClient(AuthService, transport);
 
-const TOKEN_KEY = "cospec_access_token";
-const REFRESH_KEY = "cospec_refresh_token";
+const TOKEN_KEY = "colign_access_token";
+const REFRESH_KEY = "colign_refresh_token";
 
 export function saveTokens(accessToken: string, refreshToken: string) {
   localStorage.setItem(TOKEN_KEY, accessToken);

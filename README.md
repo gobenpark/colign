@@ -1,4 +1,4 @@
-# CoSpec
+# Colign
 
 A Spec-Driven Development (SDD) workflow platform where developers and non-developers collaboratively discuss and write specs with AI.
 
@@ -50,7 +50,7 @@ A Spec-Driven Development (SDD) workflow platform where developers and non-devel
 make up
 
 # Run migrations
-migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/cospec?sslmode=disable" up
+migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/colign?sslmode=disable" up
 
 # Generate proto code
 make proto
@@ -113,4 +113,4 @@ make proto-lint
 
 ## License
 
-MIT
+This project is licensed under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0).

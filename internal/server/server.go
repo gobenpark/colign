@@ -6,17 +6,17 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/gobenpark/CoSpec/internal/auth"
-	"github.com/gobenpark/CoSpec/internal/config"
-	"github.com/gobenpark/CoSpec/internal/database"
-	"github.com/gobenpark/CoSpec/internal/middleware"
+	"github.com/gobenpark/colign/internal/auth"
+	"github.com/gobenpark/colign/internal/config"
+	"github.com/gobenpark/colign/internal/database"
+	"github.com/gobenpark/colign/internal/middleware"
 	"github.com/uptrace/bun"
 
-	"github.com/gobenpark/CoSpec/gen/proto/auth/v1/authv1connect"
-	"github.com/gobenpark/CoSpec/gen/proto/project/v1/projectv1connect"
-	"github.com/gobenpark/CoSpec/gen/proto/workflow/v1/workflowv1connect"
-	"github.com/gobenpark/CoSpec/internal/project"
-	"github.com/gobenpark/CoSpec/internal/workflow"
+	"github.com/gobenpark/colign/gen/proto/auth/v1/authv1connect"
+	"github.com/gobenpark/colign/gen/proto/project/v1/projectv1connect"
+	"github.com/gobenpark/colign/gen/proto/workflow/v1/workflowv1connect"
+	"github.com/gobenpark/colign/internal/project"
+	"github.com/gobenpark/colign/internal/workflow"
 )
 
 type Server struct {

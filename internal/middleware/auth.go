@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gobenpark/CoSpec/internal/auth"
+	"github.com/gobenpark/colign/internal/auth"
 )
 
 const (

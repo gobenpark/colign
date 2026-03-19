@@ -3,7 +3,7 @@ package workflow
 import (
 	"testing"
 
-	"github.com/gobenpark/CoSpec/internal/models"
+	"github.com/gobenpark/colign/internal/models"
 )
 
 func TestShouldAutoAdvance(t *testing.T) {

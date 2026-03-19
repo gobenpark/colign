@@ -42,7 +42,7 @@ func (m *JWTManager) GenerateAccessToken(userID int64, email string) (string, er
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(AccessTokenDuration)),
 			IssuedAt:  jwt.NewNumericDate(now),
-			Issuer:    "cospec",
+			Issuer:    "colign",
 		},
 	}
 

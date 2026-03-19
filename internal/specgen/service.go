@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/gobenpark/CoSpec/internal/chat"
+	"github.com/gobenpark/colign/internal/chat"
 )
 
 type Service struct {

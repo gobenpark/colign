@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/gobenpark/CoSpec/internal/models"
+	"github.com/gobenpark/colign/internal/models"
 	"github.com/uptrace/bun"
 )
 

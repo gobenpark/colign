@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"connectrpc.com/connect"
-	authv1 "github.com/gobenpark/CoSpec/gen/proto/auth/v1"
-	"github.com/gobenpark/CoSpec/gen/proto/auth/v1/authv1connect"
+	authv1 "github.com/gobenpark/colign/gen/proto/auth/v1"
+	"github.com/gobenpark/colign/gen/proto/auth/v1/authv1connect"
 )
 
 type ConnectHandler struct {

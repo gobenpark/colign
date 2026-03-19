@@ -1,6 +1,6 @@
 package workflow
 
-import "github.com/gobenpark/CoSpec/internal/models"
+import "github.com/gobenpark/colign/internal/models"
 
 var stageIndex = map[models.ChangeStage]int{
 	models.StageDraft:  0,
