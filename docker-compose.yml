@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: cospec
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  hocuspocus:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./hocuspocus:/app
+    ports:
+      - "1234:1234"
+    command: sh -c "npm install && npx tsx src/index.ts"
+    depends_on:
+      - redis
+
+volumes:
+  pgdata:

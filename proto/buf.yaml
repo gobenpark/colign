@@ -1,0 +1,12 @@
+version: v2
+modules:
+  - path: .
+    name: buf.build/gobenpark/cospec
+deps:
+  - buf.build/protocolbuffers/wellknowntypes
+lint:
+  use:
+    - STANDARD
+breaking:
+  use:
+    - FILE

@@ -1,0 +1,136 @@
+syntax = "proto3";
+
+package project.v1;
+
+option go_package = "github.com/gobenpark/CoSpec/gen/proto/project/v1;projectv1";
+
+import "google/protobuf/timestamp.proto";
+
+// Project messages
+
+message Project {
+  int64 id = 1;
+  string name = 2;
+  string slug = 3;
+  string description = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message ProjectMember {
+  int64 id = 1;
+  int64 project_id = 2;
+  int64 user_id = 3;
+  string role = 4;
+  string user_name = 5;
+  string user_email = 6;
+}
+
+message Change {
+  int64 id = 1;
+  int64 project_id = 2;
+  string name = 3;
+  string stage = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+// Project CRUD
+
+message CreateProjectRequest {
+  string name = 1;
+  string description = 2;
+}
+
+message CreateProjectResponse {
+  Project project = 1;
+}
+
+message GetProjectRequest {
+  string slug = 1;
+}
+
+message GetProjectResponse {
+  Project project = 1;
+  repeated ProjectMember members = 2;
+}
+
+message ListProjectsRequest {}
+
+message ListProjectsResponse {
+  repeated Project projects = 1;
+}
+
+message UpdateProjectRequest {
+  int64 id = 1;
+  string name = 2;
+  string description = 3;
+}
+
+message UpdateProjectResponse {
+  Project project = 1;
+}
+
+message DeleteProjectRequest {
+  int64 id = 1;
+}
+
+message DeleteProjectResponse {}
+
+// Member management
+
+message InviteMemberRequest {
+  int64 project_id = 1;
+  string email = 2;
+  string role = 3;
+}
+
+message InviteMemberResponse {
+  ProjectMember member = 1;
+}
+
+// Change CRUD
+
+message CreateChangeRequest {
+  int64 project_id = 1;
+  string name = 2;
+}
+
+message CreateChangeResponse {
+  Change change = 1;
+}
+
+message ListChangesRequest {
+  int64 project_id = 1;
+}
+
+message ListChangesResponse {
+  repeated Change changes = 1;
+}
+
+message GetChangeRequest {
+  int64 id = 1;
+}
+
+message GetChangeResponse {
+  Change change = 1;
+}
+
+message DeleteChangeRequest {
+  int64 id = 1;
+}
+
+message DeleteChangeResponse {}
+
+service ProjectService {
+  rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse) {}
+  rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {}
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {}
+  rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse) {}
+  rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse) {}
+  rpc InviteMember(InviteMemberRequest) returns (InviteMemberResponse) {}
+  rpc CreateChange(CreateChangeRequest) returns (CreateChangeResponse) {}
+  rpc ListChanges(ListChangesRequest) returns (ListChangesResponse) {}
+  rpc GetChange(GetChangeRequest) returns (GetChangeResponse) {}
+  rpc DeleteChange(DeleteChangeRequest) returns (DeleteChangeResponse) {}
+}

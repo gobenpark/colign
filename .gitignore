@@ -1,0 +1,40 @@
+# OpenSpec
+openspec/
+
+# Go
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Dependencies
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+
+# Node
+web/node_modules/
+hocuspocus/node_modules/
+web/.next/
+
+# Generated
+gen/
+web/src/gen/
+
+# OS
+.DS_Store
+Thumbs.db
+api
+.claude/
