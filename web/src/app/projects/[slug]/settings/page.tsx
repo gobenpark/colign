@@ -82,7 +82,7 @@ export default function ProjectSettingsPage() {
   return (
     <div className="min-h-screen">
       <Header
-        breadcrumbs={[{ label: "Project", href: `/projects/${slug}` }, { label: "Settings" }]}
+        breadcrumbs={[{ label: slug, href: `/projects/${slug}` }, { label: "Settings" }]}
       />
 
       <div className="mx-auto flex max-w-5xl gap-8 px-6 py-8">

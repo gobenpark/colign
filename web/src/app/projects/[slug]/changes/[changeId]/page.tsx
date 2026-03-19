@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { workflowClient } from "@/lib/workflow";
 import { WorkflowPanel } from "@/components/change/workflow-panel";
 import { DocumentTab } from "@/components/change/document-tab";
 import { ChatTab } from "@/components/change/chat-tab";
+import { Header } from "@/components/layout/header";
 
 interface GateCondition {
   name: string;
@@ -110,49 +110,12 @@ export default function ChangeDetailPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-30 border-b border-border/50 bg-background/80 backdrop-blur-md">
-        <div className="flex items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-3">
-            <Link href="/projects" className="text-xl font-bold tracking-tight">
-              Co<span className="text-primary">lign</span>
-            </Link>
-            <svg
-              className="h-4 w-4 text-muted-foreground"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M8.25 4.5l7.5 7.5-7.5 7.5"
-              />
-            </svg>
-            <Link
-              href={`/projects/${slug}`}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
-            >
-              Project
-            </Link>
-            <svg
-              className="h-4 w-4 text-muted-foreground"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M8.25 4.5l7.5 7.5-7.5 7.5"
-              />
-            </svg>
-            <span className="text-sm font-medium">Change</span>
-          </div>
-
-          {/* Chat Toggle */}
+      <Header
+        breadcrumbs={[
+          { label: slug, href: `/projects/${slug}` },
+          { label: "Change" },
+        ]}
+        actions={
           <Button
             variant={chatOpen ? "default" : "outline"}
             size="sm"
@@ -169,8 +132,8 @@ export default function ChangeDetailPage() {
             </svg>
             {t("change.aiChat")}
           </Button>
-        </div>
-      </header>
+        }
+      />
 
       {/* Main Layout */}
       <div className="flex flex-1 overflow-hidden">

@@ -57,10 +57,10 @@ export function Header({ breadcrumbs = [], actions }: HeaderProps) {
                   d="M8.25 4.5l7.5 7.5-7.5 7.5"
                 />
               </svg>
-              <div className="relative" ref={orgMenuRef}>
-                <button
-                  onClick={() => setOrgMenuOpen(!orgMenuOpen)}
-                  className="cursor-pointer flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
+              <div className="relative flex items-center gap-1" ref={orgMenuRef}>
+                <Link
+                  href="/projects"
+                  className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
                 >
                   <svg
                     className="h-3.5 w-3.5 text-muted-foreground"
@@ -76,9 +76,14 @@ export function Header({ breadcrumbs = [], actions }: HeaderProps) {
                     />
                   </svg>
                   {currentOrg.name}
-                  {orgs.length > 1 && (
+                </Link>
+                {orgs.length > 1 && (
+                  <button
+                    onClick={() => setOrgMenuOpen(!orgMenuOpen)}
+                    className="cursor-pointer rounded p-0.5 text-muted-foreground/50 transition-colors hover:bg-accent hover:text-foreground"
+                  >
                     <svg
-                      className="h-3 w-3 text-muted-foreground/50"
+                      className="h-3 w-3"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -90,8 +95,8 @@ export function Header({ breadcrumbs = [], actions }: HeaderProps) {
                         d="M19.5 8.25l-7.5 7.5-7.5-7.5"
                       />
                     </svg>
-                  )}
-                </button>
+                  </button>
+                )}
                 {orgMenuOpen && orgs.length > 1 && (
                   <div className="absolute left-0 top-9 z-50 w-56 rounded-xl border border-border/50 bg-popover p-1.5 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
                     {orgs.map((org) => (
