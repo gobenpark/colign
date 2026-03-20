@@ -18,9 +18,9 @@ import (
 )
 
 var (
-	ErrEmailAlreadyExists  = errors.New("이미 사용 중인 이메일입니다")
-	ErrInvalidCredentials  = errors.New("이메일 또는 비밀번호가 올바르지 않습니다")
-	ErrInvalidRefreshToken = errors.New("유효하지 않거나 만료된 리프레시 토큰입니다")
+	ErrEmailAlreadyExists  = errors.New("email already in use")
+	ErrInvalidCredentials  = errors.New("invalid email or password")
+	ErrInvalidRefreshToken = errors.New("invalid or expired refresh token")
 )
 
 type Service struct {
