@@ -21,6 +21,7 @@ var (
 	ErrEmailAlreadyExists  = errors.New("email already in use")
 	ErrInvalidCredentials  = errors.New("invalid email or password")
 	ErrInvalidRefreshToken = errors.New("invalid or expired refresh token")
+	ErrUserNotFound        = errors.New("user not found")
 )
 
 type Service struct {
@@ -278,4 +279,22 @@ func (s *Service) createSession(ctx context.Context, user *models.User, orgID in
 	}
 
 	return tokenPair, nil
+}
+
+func (s *Service) Me(ctx context.Context, authHeader string) (*models.User, int64, error) {
+	claims, err := ExtractClaims(s.jwtManager, authHeader)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	user := new(models.User)
+	err = s.db.NewSelect().Model(user).Where("id = ?", claims.UserID).Scan(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, 0, ErrUserNotFound
+		}
+		return nil, 0, err
+	}
+
+	return user, claims.OrgID, nil
 }

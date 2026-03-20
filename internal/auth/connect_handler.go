@@ -110,3 +110,20 @@ func (h *ConnectHandler) OAuthCallback(ctx context.Context, req *connect.Request
 		ExpiresAt:    tokenPair.ExpiresAt,
 	}), nil
 }
+
+func (h *ConnectHandler) Me(ctx context.Context, req *connect.Request[authv1.MeRequest]) (*connect.Response[authv1.MeResponse], error) {
+	user, orgID, err := h.service.Me(ctx, req.Header().Get("Authorization"))
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			return nil, connect.NewError(connect.CodeNotFound, err)
+		}
+		return nil, connect.NewError(connect.CodeUnauthenticated, err)
+	}
+
+	return connect.NewResponse(&authv1.MeResponse{
+		UserId: user.ID,
+		Email:  user.Email,
+		Name:   user.Name,
+		OrgId:  orgID,
+	}), nil
+}
