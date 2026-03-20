@@ -29,6 +29,7 @@ interface SpecEditorProps {
     addHighlightAtSavedSelection: (commentId: string) => void;
     removeHighlight: (commentId: string) => void;
     scrollToHighlight: (commentId: string) => void;
+    getEditorDom: () => HTMLElement | null;
   } | null>;
 }
 
@@ -84,6 +85,7 @@ export function SpecEditor({
           debouncedSave(editor.getHTML());
         }
       },
+      getEditorDom: () => editor.view.dom,
       scrollToHighlight: (commentId: string) => {
         const dom = editor.view.dom;
         const el = dom.querySelector(`[data-comment-id="${commentId}"]`);
