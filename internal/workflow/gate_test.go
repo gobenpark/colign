@@ -13,8 +13,6 @@ func TestGateConditions_Draft(t *testing.T) {
 	conditions := gate.Check(models.StageDraft, GateInput{
 		HasProposal: false,
 		HasDesign:   false,
-		SpecsCount:  0,
-		SpecsDone:   0,
 	})
 
 	if len(conditions) == 0 {
@@ -36,47 +34,32 @@ func TestGateConditions_Draft(t *testing.T) {
 func TestGateConditions_Design(t *testing.T) {
 	gate := NewGateChecker()
 
-	// Design → Review: design + all specs must exist
+	// Design → Review: design must exist
 	conditions := gate.Check(models.StageDesign, GateInput{
 		HasProposal: true,
 		HasDesign:   false,
-		SpecsCount:  3,
-		SpecsDone:   1,
 	})
 
-	var designCond, specsCond *GateCondition
-	for i := range conditions {
-		switch conditions[i].Name {
-		case "design":
-			designCond = &conditions[i]
-		case "specs":
-			specsCond = &conditions[i]
-		}
+	if len(conditions) == 0 {
+		t.Error("expected conditions for Design gate")
+	}
+	if conditions[0].Name != "design" {
+		t.Error("expected design condition")
+	}
+	if conditions[0].Met {
+		t.Error("design condition should not be met")
 	}
 
-	if designCond == nil || designCond.Met {
-		t.Error("design condition should exist and not be met")
-	}
-	if specsCond == nil || specsCond.Met {
-		t.Error("specs condition should exist and not be met")
-	}
-
-	// All done
+	// With design
 	conditions = gate.Check(models.StageDesign, GateInput{
 		HasProposal: true,
 		HasDesign:   true,
-		SpecsCount:  3,
-		SpecsDone:   3,
 	})
 
-	allMet := true
 	for _, c := range conditions {
 		if !c.Met {
-			allMet = false
+			t.Errorf("condition %s should be met", c.Name)
 		}
-	}
-	if !allMet {
-		t.Error("all design gate conditions should be met")
 	}
 }
 

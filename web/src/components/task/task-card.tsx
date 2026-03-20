@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, User, Trash2 } from "lucide-react";
+import { GripVertical, User, Trash2, X, Circle, Clock, CheckCircle2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
 interface TaskCardProps {
@@ -23,6 +23,12 @@ interface TaskCardProps {
   isDragging?: boolean;
 }
 
+const statusConfig: Record<string, { icon: typeof Circle; color: string; bg: string }> = {
+  todo: { icon: Circle, color: "text-muted-foreground", bg: "bg-muted/50" },
+  in_progress: { icon: Clock, color: "text-blue-400", bg: "bg-blue-400/10" },
+  done: { icon: CheckCircle2, color: "text-emerald-400", bg: "bg-emerald-400/10" },
+};
+
 function getInitials(name: string): string {
   return name
     .split(" ")
@@ -35,16 +41,9 @@ function getInitials(name: string): string {
 export function TaskCard({ task, members, onUpdate, onDelete, isDragging }: TaskCardProps) {
   const { t } = useI18n();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
-
-  // Local state for each editable field
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description);
-  const [status, setStatus] = useState(task.status);
-  const [specRef, setSpecRef] = useState(task.specRef);
-  const [assigneeId, setAssigneeId] = useState<string>(
-    task.assigneeId !== undefined ? String(task.assigneeId) : "",
-  );
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: String(task.id),
@@ -57,235 +56,189 @@ export function TaskCard({ task, members, onUpdate, onDelete, isDragging }: Task
   };
 
   const isDone = task.status === "done";
+  const cfg = statusConfig[task.status] || statusConfig.todo;
+  const StatusIcon = cfg.icon;
+
+  // Close on click outside
+  useEffect(() => {
+    if (!isExpanded) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
+        setIsExpanded(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isExpanded]);
 
   function handleBlurTitle() {
-    if (title !== task.title) {
-      onUpdate(task.id, { title });
-    }
+    if (title !== task.title) onUpdate(task.id, { title });
   }
 
   function handleBlurDescription() {
-    if (description !== task.description) {
-      onUpdate(task.id, { description });
-    }
+    if (description !== task.description) onUpdate(task.id, { description });
   }
 
-  function handleStatusChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const newStatus = e.target.value;
-    setStatus(newStatus);
-    onUpdate(task.id, { status: newStatus });
+  function cycleStatus() {
+    const order = ["todo", "in_progress", "done"];
+    const next = order[(order.indexOf(task.status) + 1) % order.length];
+    onUpdate(task.id, { status: next });
   }
 
-  function handleBlurSpecRef() {
-    if (specRef !== task.specRef) {
-      onUpdate(task.id, { specRef });
-    }
+  function handleAssignee(userId: string) {
+    onUpdate(task.id, { assigneeId: userId === "" ? null : BigInt(userId) });
   }
-
-  function handleAssigneeChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const value = e.target.value;
-    setAssigneeId(value);
-    onUpdate(task.id, {
-      assigneeId: value === "" ? null : BigInt(value),
-    });
-  }
-
-  function handleDeleteClick() {
-    if (deleteConfirm) {
-      onDelete(task.id);
-    } else {
-      setDeleteConfirm(true);
-    }
-  }
-
-  function handleCardClick() {
-    if (!isExpanded) {
-      setIsExpanded(true);
-    }
-  }
-
-  function handleCollapse(e: React.MouseEvent) {
-    e.stopPropagation();
-    setIsExpanded(false);
-    setDeleteConfirm(false);
-  }
-
-  const statusOptions = [
-    { value: "todo", label: t("tasks.statusTodo") },
-    { value: "in_progress", label: t("tasks.statusInProgress") },
-    { value: "done", label: t("tasks.statusDone") },
-  ];
 
   if (isExpanded) {
     return (
       <div
-        ref={setNodeRef}
+        ref={(node) => {
+          setNodeRef(node);
+          (cardRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        }}
         style={style}
-        className="rounded-lg border border-border bg-card p-3 shadow-sm"
+        className="rounded-xl border border-primary/20 bg-card/80 shadow-lg backdrop-blur-sm"
       >
-        {/* Drag handle row */}
-        <div className="mb-2 flex items-center gap-2">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border/30 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <button
+              {...attributes}
+              {...listeners}
+              className="cursor-grab text-muted-foreground/50 hover:text-muted-foreground active:cursor-grabbing"
+              tabIndex={-1}
+            >
+              <GripVertical className="size-3.5" />
+            </button>
+            <button
+              onClick={cycleStatus}
+              className={`cursor-pointer rounded-md p-1 ${cfg.bg} transition-colors hover:opacity-80`}
+            >
+              <StatusIcon className={`size-3.5 ${cfg.color}`} />
+            </button>
+          </div>
           <button
-            {...attributes}
-            {...listeners}
-            className="flex min-h-[44px] min-w-[44px] cursor-grab items-center justify-center rounded text-muted-foreground hover:text-foreground active:cursor-grabbing"
-            tabIndex={-1}
+            onClick={() => setIsExpanded(false)}
+            className="cursor-pointer rounded-md p-1 text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
           >
-            <GripVertical className="h-4 w-4" />
-          </button>
-          <button
-            onClick={handleCollapse}
-            className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors duration-200"
-          >
-            {t("common.done")}
+            <X className="size-3.5" />
           </button>
         </div>
 
-        {/* Title */}
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={handleBlurTitle}
-          placeholder={t("tasks.titlePlaceholder")}
-          className="mb-2 w-full rounded border border-border bg-transparent px-2 py-1.5 text-sm font-medium outline-none focus:border-primary transition-colors duration-200"
-        />
-
-        {/* Description */}
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          onBlur={handleBlurDescription}
-          placeholder={t("tasks.descriptionPlaceholder")}
-          rows={3}
-          className="mb-2 w-full resize-none rounded border border-border bg-transparent px-2 py-1.5 text-sm text-muted-foreground outline-none focus:border-primary transition-colors duration-200"
-        />
-
-        {/* Status */}
-        <div className="mb-2">
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">
-            Status
-          </label>
-          <select
-            value={status}
-            onChange={handleStatusChange}
-            className="w-full rounded border border-border bg-card px-2 py-1.5 text-sm outline-none focus:border-primary transition-colors duration-200 min-h-[44px]"
-          >
-            {statusOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Spec Ref */}
-        <div className="mb-2">
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">
-            Spec Ref
-          </label>
+        {/* Body */}
+        <div className="px-4 py-3 space-y-3">
+          {/* Title */}
           <input
-            value={specRef}
-            onChange={(e) => setSpecRef(e.target.value)}
-            onBlur={handleBlurSpecRef}
-            placeholder={t("tasks.specRefPlaceholder")}
-            className="w-full rounded border border-border bg-transparent px-2 py-1.5 text-sm outline-none focus:border-primary transition-colors duration-200"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={handleBlurTitle}
+            placeholder={t("tasks.titlePlaceholder")}
+            className="w-full bg-transparent text-sm font-medium outline-none placeholder:text-muted-foreground/40"
+            autoFocus
           />
-        </div>
 
-        {/* Assignee */}
-        <div className="mb-3">
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">
-            {t("tasks.assignee")}
-          </label>
-          <select
-            value={assigneeId}
-            onChange={handleAssigneeChange}
-            className="w-full rounded border border-border bg-card px-2 py-1.5 text-sm outline-none focus:border-primary transition-colors duration-200 min-h-[44px]"
-          >
-            <option value="">{t("tasks.unassigned")}</option>
-            {members.map((m) => (
-              <option key={String(m.userId)} value={String(m.userId)}>
-                {m.userName}
-              </option>
-            ))}
-          </select>
-        </div>
+          {/* Description */}
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            onBlur={handleBlurDescription}
+            placeholder={t("tasks.descriptionPlaceholder")}
+            rows={2}
+            className="w-full resize-none bg-transparent text-sm text-foreground/70 outline-none placeholder:text-muted-foreground/40"
+          />
 
-        {/* Delete */}
-        <button
-          onClick={handleDeleteClick}
-          onBlur={() => setDeleteConfirm(false)}
-          className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded border border-destructive/30 px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors duration-200"
-        >
-          <Trash2 className="h-4 w-4" />
-          {deleteConfirm ? t("tasks.deleteConfirm") : t("common.delete")}
-        </button>
+          {/* Properties row */}
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            {/* Assignee */}
+            <select
+              value={task.assigneeId !== undefined ? String(task.assigneeId) : ""}
+              onChange={(e) => handleAssignee(e.target.value)}
+              className="cursor-pointer rounded-md border border-border/40 bg-transparent px-2 py-1 text-xs text-foreground/70 outline-none hover:border-border/60 transition-colors"
+            >
+              <option value="">{t("tasks.unassigned")}</option>
+              {members.map((m) => (
+                <option key={String(m.userId)} value={String(m.userId)}>
+                  {m.userName}
+                </option>
+              ))}
+            </select>
+
+            {/* Spec ref */}
+            <input
+              value={task.specRef}
+              onChange={(e) => onUpdate(task.id, { specRef: e.target.value })}
+              placeholder={t("tasks.specRefPlaceholder")}
+              className="w-20 rounded-md border border-border/40 bg-transparent px-2 py-1 text-xs text-foreground/70 outline-none placeholder:text-muted-foreground/30 hover:border-border/60 focus:border-primary/50 transition-colors"
+            />
+
+            {/* Delete */}
+            <button
+              onClick={() => onDelete(task.id)}
+              className="ml-auto cursor-pointer rounded-md p-1 text-muted-foreground/40 hover:bg-destructive/10 hover:text-destructive transition-colors"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  // Collapsed state
+  // Collapsed state — Linear style compact card
   return (
     <div
       ref={setNodeRef}
       style={style}
-      onClick={handleCardClick}
-      className={[
-        "group cursor-pointer rounded-lg border border-border bg-card p-3 shadow-sm hover:border-border/80 hover:shadow-md transition-all duration-200",
-        isDone ? "opacity-70" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      onClick={() => setIsExpanded(true)}
+      {...attributes}
+      {...listeners}
+      className={`group cursor-pointer rounded-lg border border-border/30 bg-card/50 px-3 py-2.5 transition-all duration-150 hover:border-border/50 hover:bg-card/80 ${
+        isDone ? "opacity-60" : ""
+      }`}
     >
-      <div className="flex items-start gap-2">
-        {/* Drag handle */}
+      <div className="flex items-center gap-2.5">
+        {/* Drag indicator */}
+        <div className="shrink-0 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity">
+          <GripVertical className="size-3.5" />
+        </div>
+
+        {/* Status icon */}
         <button
-          {...attributes}
-          {...listeners}
-          onClick={(e) => e.stopPropagation()}
-          className="mt-0.5 flex min-h-[44px] min-w-[44px] cursor-grab items-center justify-center rounded text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground active:cursor-grabbing transition-opacity duration-200"
-          tabIndex={-1}
+          onClick={(e) => {
+            e.stopPropagation();
+            cycleStatus();
+          }}
+          className={`shrink-0 cursor-pointer rounded-md p-0.5 ${cfg.bg} transition-colors hover:opacity-80`}
         >
-          <GripVertical className="h-4 w-4" />
+          <StatusIcon className={`size-3.5 ${cfg.color}`} />
         </button>
 
-        {/* Content */}
-        <div className="min-w-0 flex-1">
-          <p
-            className={[
-              "mb-1 text-sm font-medium leading-snug",
-              isDone ? "line-through text-muted-foreground" : "",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-          >
-            {task.title}
-          </p>
+        {/* Title */}
+        <span
+          className={`min-w-0 flex-1 truncate text-sm ${
+            isDone ? "line-through text-muted-foreground" : "text-foreground/90"
+          }`}
+        >
+          {task.title}
+        </span>
 
-          {task.description && (
-            <p className="mb-2 line-clamp-2 text-xs text-muted-foreground leading-relaxed">
-              {task.description}
-            </p>
-          )}
+        {/* Spec ref badge */}
+        {task.specRef && (
+          <span className="shrink-0 rounded bg-muted/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            {task.specRef}
+          </span>
+        )}
 
-          <div className="flex items-center gap-2 flex-wrap">
-            {task.specRef && (
-              <span className="inline-flex items-center rounded-full border border-border/60 bg-muted/50 px-2 py-0.5 text-xs text-muted-foreground">
-                {task.specRef}
-              </span>
-            )}
-
-            {task.assigneeName ? (
-              <div className="ml-auto flex min-h-[28px] min-w-[28px] items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
-                {getInitials(task.assigneeName)}
-              </div>
-            ) : (
-              <div className="ml-auto flex min-h-[28px] min-w-[28px] items-center justify-center rounded-full border border-dashed border-border text-muted-foreground">
-                <User className="h-3 w-3" />
-              </div>
-            )}
+        {/* Assignee avatar */}
+        {task.assigneeName ? (
+          <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium text-primary">
+            {getInitials(task.assigneeName)}
           </div>
-        </div>
+        ) : (
+          <div className="flex size-6 shrink-0 items-center justify-center rounded-full border border-dashed border-border/40 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity">
+            <User className="size-3" />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -31,6 +31,7 @@ interface MarginCommentsProps {
   currentUserId?: number;
   editorDom: HTMLElement | null;
   refreshRef?: React.MutableRefObject<(() => void) | null>;
+  onRemoveHighlight?: (commentId: string) => void;
 }
 
 function timeAgo(date: Date): string {
@@ -50,6 +51,7 @@ export function MarginComments({
   currentUserId,
   editorDom,
   refreshRef,
+  onRemoveHighlight,
 }: MarginCommentsProps) {
   const { t } = useI18n();
   const [comments, setComments] = useState<CommentData[]>([]);
@@ -104,9 +106,7 @@ export function MarginComments({
     const newPositions = new Map<string, number>();
     let lastBottom = 0;
 
-    const visibleComments = showResolved
-      ? comments
-      : comments.filter((c) => !c.resolved);
+    const visibleComments = showResolved ? comments : comments.filter((c) => !c.resolved);
 
     for (const comment of visibleComments) {
       const el = editorDom.querySelector(`[data-comment-id="${comment.id}"]`);
@@ -179,12 +179,14 @@ export function MarginComments({
 
   const handleResolve = async (commentId: bigint) => {
     await commentClient.resolveComment({ commentId });
+    onRemoveHighlight?.(String(commentId));
     loadComments();
   };
 
   const handleDelete = async (commentId: bigint) => {
     if (!confirm(t("comments.deleteConfirm"))) return;
     await commentClient.deleteComment({ commentId });
+    onRemoveHighlight?.(String(commentId));
     loadComments();
   };
 
@@ -201,9 +203,7 @@ export function MarginComments({
     }
   };
 
-  const visibleComments = showResolved
-    ? comments
-    : comments.filter((c) => !c.resolved);
+  const visibleComments = showResolved ? comments : comments.filter((c) => !c.resolved);
 
   if (visibleComments.length === 0) return null;
 
@@ -221,144 +221,146 @@ export function MarginComments({
       )}
 
       <div ref={containerRef} className="relative">
-      {visibleComments.map((comment) => {
-        const id = String(comment.id);
-        const top = positions.get(id);
-        if (top === undefined) return null;
+        {visibleComments.map((comment) => {
+          const id = String(comment.id);
+          const top = positions.get(id);
+          if (top === undefined) return null;
 
-        const isExpanded = expandedId === id;
-        const isHovered = hoveredCommentId === id;
-        const isOwner = currentUserId !== undefined && comment.userId === BigInt(currentUserId);
+          const isExpanded = expandedId === id;
+          const isHovered = hoveredCommentId === id;
+          const isOwner = currentUserId !== undefined && comment.userId === BigInt(currentUserId);
 
-        return (
-          <div
-            key={id}
-            className={`absolute left-0 right-0 cursor-pointer rounded-lg border px-3 py-2 text-xs transition-all duration-150 ${
-              isHovered
-                ? "border-primary/50 bg-accent/50 shadow-md"
-                : "border-border/30 bg-card/50 hover:border-border/60"
-            } ${comment.resolved ? "opacity-40" : ""}`}
-            style={{ top }}
-            onClick={() => setExpandedId(isExpanded ? null : id)}
-            onMouseEnter={() => {
-              setHoveredCommentId(id);
-              highlightInEditor(id, true);
-            }}
-            onMouseLeave={() => {
-              setHoveredCommentId(null);
-              highlightInEditor(id, false);
-            }}
-          >
-            {/* Collapsed: avatar + first line */}
-            <div className="flex items-center gap-2">
-              <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[9px] font-bold text-primary uppercase">
-                {comment.userName.charAt(0)}
+          return (
+            <div
+              key={id}
+              className={`absolute left-0 right-0 cursor-pointer rounded-lg border px-3 py-2 text-xs transition-all duration-150 ${
+                isHovered
+                  ? "border-primary/50 bg-accent/50 shadow-md"
+                  : "border-border/30 bg-card/50 hover:border-border/60"
+              } ${comment.resolved ? "opacity-40" : ""}`}
+              style={{ top }}
+              onClick={() => setExpandedId(isExpanded ? null : id)}
+              onMouseEnter={() => {
+                setHoveredCommentId(id);
+                highlightInEditor(id, true);
+              }}
+              onMouseLeave={() => {
+                setHoveredCommentId(null);
+                highlightInEditor(id, false);
+              }}
+            >
+              {/* Collapsed: avatar + first line */}
+              <div className="flex items-center gap-2">
+                <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[9px] font-bold text-primary uppercase">
+                  {comment.userName.charAt(0)}
+                </div>
+                <span className="font-medium text-foreground/80">{comment.userName}</span>
+                <span className="text-muted-foreground">{timeAgo(comment.createdAt)}</span>
               </div>
-              <span className="font-medium text-foreground/80">{comment.userName}</span>
-              <span className="text-muted-foreground">{timeAgo(comment.createdAt)}</span>
-            </div>
 
-            {!isExpanded && (
-              <div className="mt-1 flex items-center gap-2">
-                <p className="flex-1 truncate text-foreground/70">{comment.body}</p>
-                {comment.replies.length > 0 && (
-                  <span className="shrink-0 text-[10px] text-muted-foreground">
-                    {comment.replies.length} {t("comments.reply").toLowerCase()}
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Expanded */}
-            {isExpanded && (
-              <div className="mt-2" onClick={(e) => e.stopPropagation()}>
-                {comment.quotedText && (
-                  <div className="mb-2 rounded border-l-2 border-yellow-500/50 bg-yellow-500/5 px-2 py-1 text-muted-foreground">
-                    &ldquo;{comment.quotedText}&rdquo;
-                  </div>
-                )}
-
-                <p className="text-foreground">{comment.body}</p>
-
-                {/* Replies */}
-                {comment.replies.length > 0 && (
-                  <div className="mt-2 space-y-2 border-l border-border/30 pl-2">
-                    {comment.replies.map((reply) => (
-                      <div key={String(reply.id)}>
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium">{reply.userName}</span>
-                          <span className="text-muted-foreground">{timeAgo(reply.createdAt)}</span>
-                        </div>
-                        <p className="text-foreground/80">{reply.body}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="mt-2 flex items-center gap-1">
-                  {!comment.resolved && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleResolve(comment.id)}
-                      className="h-6 cursor-pointer gap-1 px-1.5 text-[10px] text-muted-foreground"
-                    >
-                      <Check className="size-3" />
-                      {t("comments.resolve")}
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setReplyingTo(replyingTo === id ? null : id)}
-                    className="h-6 cursor-pointer px-1.5 text-[10px] text-muted-foreground"
-                  >
-                    {t("comments.reply")}
-                  </Button>
-                  {isOwner && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(comment.id)}
-                      className="h-6 cursor-pointer px-1.5 text-[10px] text-destructive"
-                    >
-                      <Trash2 className="size-3" />
-                    </Button>
+              {!isExpanded && (
+                <div className="mt-1 flex items-center gap-2">
+                  <p className="flex-1 truncate text-foreground/70">{comment.body}</p>
+                  {comment.replies.length > 0 && (
+                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                      {comment.replies.length} {t("comments.reply").toLowerCase()}
+                    </span>
                   )}
                 </div>
+              )}
 
-                {/* Reply input */}
-                {replyingTo === id && (
-                  <div className="mt-2 flex gap-1">
-                    <input
-                      autoFocus
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleReply(comment.id);
-                        }
-                      }}
-                      placeholder={t("comments.replyPlaceholder")}
-                      className="flex-1 rounded border border-border/50 bg-transparent px-2 py-1 text-xs outline-none focus:border-primary"
-                    />
+              {/* Expanded */}
+              {isExpanded && (
+                <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                  {comment.quotedText && (
+                    <div className="mb-2 rounded border-l-2 border-yellow-500/50 bg-yellow-500/5 px-2 py-1 text-muted-foreground">
+                      &ldquo;{comment.quotedText}&rdquo;
+                    </div>
+                  )}
+
+                  <p className="text-foreground">{comment.body}</p>
+
+                  {/* Replies */}
+                  {comment.replies.length > 0 && (
+                    <div className="mt-2 space-y-2 border-l border-border/30 pl-2">
+                      {comment.replies.map((reply) => (
+                        <div key={String(reply.id)}>
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">{reply.userName}</span>
+                            <span className="text-muted-foreground">
+                              {timeAgo(reply.createdAt)}
+                            </span>
+                          </div>
+                          <p className="text-foreground/80">{reply.body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="mt-2 flex items-center gap-1">
+                    {!comment.resolved && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleResolve(comment.id)}
+                        className="h-6 cursor-pointer gap-1 px-1.5 text-[10px] text-muted-foreground"
+                      >
+                        <Check className="size-3" />
+                        {t("comments.resolve")}
+                      </Button>
+                    )}
                     <Button
+                      variant="ghost"
                       size="sm"
-                      onClick={() => handleReply(comment.id)}
-                      disabled={!replyText.trim() || submitting}
-                      className="h-6 cursor-pointer px-1.5"
+                      onClick={() => setReplyingTo(replyingTo === id ? null : id)}
+                      className="h-6 cursor-pointer px-1.5 text-[10px] text-muted-foreground"
                     >
-                      <Send className="size-3" />
+                      {t("comments.reply")}
                     </Button>
+                    {isOwner && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(comment.id)}
+                        className="h-6 cursor-pointer px-1.5 text-[10px] text-destructive"
+                      >
+                        <Trash2 className="size-3" />
+                      </Button>
+                    )}
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
+
+                  {/* Reply input */}
+                  {replyingTo === id && (
+                    <div className="mt-2 flex gap-1">
+                      <input
+                        autoFocus
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleReply(comment.id);
+                          }
+                        }}
+                        placeholder={t("comments.replyPlaceholder")}
+                        className="flex-1 rounded border border-border/50 bg-transparent px-2 py-1 text-xs outline-none focus:border-primary"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={() => handleReply(comment.id)}
+                        disabled={!replyText.trim() || submitting}
+                        className="h-6 cursor-pointer px-1.5"
+                      >
+                        <Send className="size-3" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

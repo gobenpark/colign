@@ -1,7 +1,7 @@
 CREATE TABLE documents (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     change_id BIGINT NOT NULL REFERENCES changes(id) ON DELETE CASCADE,
-    type TEXT NOT NULL CHECK (type IN ('proposal', 'design', 'spec', 'tasks')),
+    type TEXT NOT NULL CHECK (type IN ('proposal', 'design', 'tasks')),
     title TEXT,
     content TEXT NOT NULL DEFAULT '',
     version INTEGER NOT NULL DEFAULT 1 CHECK (version > 0),

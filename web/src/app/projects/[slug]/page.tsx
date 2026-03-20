@@ -16,19 +16,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { projectClient } from "@/lib/project";
+import { memoryClient } from "@/lib/memory";
 import { useI18n } from "@/lib/i18n";
 import {
-  GitBranch,
   Users,
   FileText,
-  ExternalLink,
   Pencil,
   UserPlus,
   Trash2,
   MoreHorizontal,
   Plus,
   ChevronRight,
-  Globe,
   Layers,
   Brain,
   Save,
@@ -104,21 +102,8 @@ export default function ProjectDetailPage() {
   const [inviteRole, setInviteRole] = useState("member");
   const [inviting, setInviting] = useState(false);
   const [inviteSuccess, setInviteSuccess] = useState("");
-
-  // Mock data for overview
-  const mockReadme = `## About\nA collaborative platform for spec-driven development. Teams discuss and write specs with AI before implementing.\n\n## Getting Started\n1. Create a new Change\n2. Write the Proposal with acceptance criteria\n3. Design the solution\n4. Review and approve\n5. Mark as Ready for implementation`;
-  const mockRepos = [
-    { name: "colign", url: "https://github.com/gobenpark/colign" },
-    { name: "colign-web", url: "https://github.com/gobenpark/colign-web" },
-    { name: "colign-infra", url: "https://github.com/gobenpark/colign-infra" },
-  ];
-  const mockTechStack = ["Go", "React", "Next.js", "PostgreSQL", "Y.js"];
-  const mockMembers = [
-    { name: "Ben Park", email: "ben@colign.dev", role: "Owner" },
-    { name: "Jane Kim", email: "jane@colign.dev", role: "Editor" },
-    { name: "Alex Lee", email: "alex@colign.dev", role: "Member" },
-  ];
-  const mockMemory = `## Domain Rules\n- SDD workflow must follow Draft → Design → Review → Ready order\n- A Change cannot skip stages\n- Acceptance Criteria must be defined before entering Review\n- All specs are written in English regardless of team language\n\n## Business Context\nTarget users are engineering teams (5-50 people) who want to align on specs before coding. Key differentiator: AI-assisted spec writing with real-time collaboration.\n\n## Constraints & Decisions\n- Payment integration must use Stripe only (contractual)\n- Data residency: all user data must stay in ap-northeast-2 (Seoul)\n- OAuth providers limited to GitHub and Google for MVP\n- Max document size: 1MB per Change document`;
+  const [members, setMembers] = useState<{ name: string; email: string; role: string }[]>([]);
+  const [memoryContent, setMemoryContent] = useState("");
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -141,8 +126,22 @@ export default function ProjectDetailPage() {
             slug: projectRes.project.slug,
             description: projectRes.project.description,
           });
-          const changesRes = await projectClient.listChanges({ projectId: projectRes.project.id });
+          // Members from API
+          setMembers(
+            (projectRes.members || []).map((m) => ({
+              name: m.userName,
+              email: m.userEmail,
+              role: m.role,
+            })),
+          );
+          const [changesRes, memoryRes] = await Promise.all([
+            projectClient.listChanges({ projectId: projectRes.project.id }),
+            memoryClient
+              .getMemory({ projectId: projectRes.project.id })
+              .catch(() => ({ memory: undefined })),
+          ]);
           setChanges(changesRes.changes.map((c) => ({ id: c.id, name: c.name, stage: c.stage })));
+          setMemoryContent(memoryRes.memory?.content ?? "");
         }
       } catch {
         // handle error
@@ -158,9 +157,15 @@ export default function ProjectDetailPage() {
     if (!newChangeName.trim() || !project) return;
     setCreating(true);
     try {
-      const res = await projectClient.createChange({ projectId: project.id, name: newChangeName.trim() });
+      const res = await projectClient.createChange({
+        projectId: project.id,
+        name: newChangeName.trim(),
+      });
       if (res.change) {
-        setChanges((prev) => [{ id: res.change!.id, name: res.change!.name, stage: res.change!.stage }, ...prev]);
+        setChanges((prev) => [
+          { id: res.change!.id, name: res.change!.name, stage: res.change!.stage },
+          ...prev,
+        ]);
         setNewChangeName("");
       }
     } catch {
@@ -174,9 +179,18 @@ export default function ProjectDetailPage() {
     if (!project || !renameName.trim()) return;
     setRenaming(true);
     try {
-      const res = await projectClient.updateProject({ id: project.id, name: renameName.trim(), description: renameDesc });
+      const res = await projectClient.updateProject({
+        id: project.id,
+        name: renameName.trim(),
+        description: renameDesc,
+      });
       if (res.project) {
-        setProject({ id: res.project.id, name: res.project.name, slug: res.project.slug, description: res.project.description });
+        setProject({
+          id: res.project.id,
+          name: res.project.name,
+          slug: res.project.slug,
+          description: res.project.description,
+        });
         setRenameOpen(false);
         if (res.project.slug !== slug) router.replace(`/projects/${res.project.slug}`);
       }
@@ -203,7 +217,11 @@ export default function ProjectDetailPage() {
     if (!project || !inviteEmail.trim()) return;
     setInviting(true);
     try {
-      await projectClient.inviteMember({ projectId: project.id, email: inviteEmail.trim(), role: inviteRole });
+      await projectClient.inviteMember({
+        projectId: project.id,
+        email: inviteEmail.trim(),
+        role: inviteRole,
+      });
       setInviteSuccess(inviteEmail.trim());
       setInviteEmail("");
       setTimeout(() => setInviteSuccess(""), 3000);
@@ -227,7 +245,9 @@ export default function ProjectDetailPage() {
       <div className="flex min-h-screen flex-col items-center justify-center gap-4">
         <h1 className="text-2xl font-bold">{t("common.notFound")}</h1>
         <Link href="/projects">
-          <Button variant="outline" className="cursor-pointer">{t("common.backToProjects")}</Button>
+          <Button variant="outline" className="cursor-pointer">
+            {t("common.backToProjects")}
+          </Button>
         </Link>
       </div>
     );
@@ -259,8 +279,13 @@ export default function ProjectDetailPage() {
               {project.description ? (
                 <p className="mt-1 text-sm text-muted-foreground">{project.description}</p>
               ) : (
-                <p className="mt-1 text-sm text-muted-foreground/40 cursor-pointer hover:text-muted-foreground/60 transition-colors"
-                   onClick={() => { setRenameName(project.name); setRenameDesc(""); setRenameOpen(true); }}
+                <p
+                  className="mt-1 text-sm text-muted-foreground/40 cursor-pointer hover:text-muted-foreground/60 transition-colors"
+                  onClick={() => {
+                    setRenameName(project.name);
+                    setRenameDesc("");
+                    setRenameOpen(true);
+                  }}
                 >
                   {t("project.addSummary")}
                 </p>
@@ -273,33 +298,45 @@ export default function ProjectDetailPage() {
               >
                 <MoreHorizontal className="size-4" />
               </button>
-            {menuOpen && (
-              <div className="absolute right-0 top-10 z-50 w-48 rounded-xl border border-border/50 bg-popover p-1.5 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
-                <button
-                  onClick={() => { setMenuOpen(false); setRenameName(project.name); setRenameDesc(project.description); setRenameOpen(true); }}
-                  className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
-                >
-                  <Pencil className="size-3.5 text-muted-foreground" />
-                  {t("project.editProject")}
-                </button>
-                <button
-                  onClick={() => { setMenuOpen(false); setInviteOpen(true); }}
-                  className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
-                >
-                  <UserPlus className="size-3.5 text-muted-foreground" />
-                  {t("project.inviteMember")}
-                </button>
-                <div className="my-1.5 border-t border-border/50" />
-                <button
-                  onClick={() => { setMenuOpen(false); setDeleteConfirm(""); setDeleteOpen(true); }}
-                  className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
-                >
-                  <Trash2 className="size-3.5" />
-                  {t("project.deleteProject")}
-                </button>
-              </div>
-            )}
-          </div>
+              {menuOpen && (
+                <div className="absolute right-0 top-10 z-50 w-48 rounded-xl border border-border/50 bg-popover p-1.5 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setRenameName(project.name);
+                      setRenameDesc(project.description);
+                      setRenameOpen(true);
+                    }}
+                    className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+                  >
+                    <Pencil className="size-3.5 text-muted-foreground" />
+                    {t("project.editProject")}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setInviteOpen(true);
+                    }}
+                    className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+                  >
+                    <UserPlus className="size-3.5 text-muted-foreground" />
+                    {t("project.inviteMember")}
+                  </button>
+                  <div className="my-1.5 border-t border-border/50" />
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setDeleteConfirm("");
+                      setDeleteOpen(true);
+                    }}
+                    className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
+                  >
+                    <Trash2 className="size-3.5" />
+                    {t("project.deleteProject")}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Properties row — Linear style */}
@@ -309,36 +346,21 @@ export default function ProjectDetailPage() {
             </div>
             <div className="flex items-center gap-1.5">
               <div className="h-2 w-2 rounded-full bg-emerald-400" />
-              <span className="text-foreground/80">{changes.length} {t("project.changes").toLowerCase()}</span>
+              <span className="text-foreground/80">
+                {changes.length} {t("project.changes").toLowerCase()}
+              </span>
             </div>
             <div className="flex items-center gap-1.5">
               <Users className="size-3.5 text-muted-foreground/60" />
-              <span className="text-foreground/80">{mockMembers.length} {t("project.membersCount")}</span>
+              <span className="text-foreground/80">
+                {members.length} {t("project.membersCount")}
+              </span>
             </div>
-            {mockTechStack.slice(0, 4).map((tech) => (
-              <span key={tech} className="rounded-md bg-muted/80 px-2 py-0.5 text-xs font-medium text-foreground/70">{tech}</span>
-            ))}
-            {mockTechStack.length > 4 && (
-              <span className="text-xs text-muted-foreground">+{mockTechStack.length - 4}</span>
-            )}
           </div>
 
           {/* Resources row */}
           <div className="mt-3 flex items-center gap-x-6 gap-y-2 text-sm">
             <span className="text-muted-foreground/60">{t("project.resources")}</span>
-            {mockRepos.map((repo) => (
-              <a
-                key={repo.url}
-                href={repo.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex cursor-pointer items-center gap-1.5 text-foreground/70 hover:text-foreground transition-colors"
-              >
-                <GitBranch className="size-3.5 text-muted-foreground/50" />
-                <span>{repo.name}</span>
-                <ExternalLink className="size-2.5 text-muted-foreground/30" />
-              </a>
-            ))}
             <button className="flex cursor-pointer items-center gap-1 text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors">
               <Plus className="size-3" />
               <span>{t("project.addResource")}</span>
@@ -366,7 +388,7 @@ export default function ProjectDetailPage() {
         {/* Tab Content */}
         {activeTab === "overview" && (
           <OverviewTab
-            readme={mockReadme}
+            readme={project.description}
             changes={changes}
             projectSlug={project.slug}
             onViewChanges={() => setActiveTab("changes")}
@@ -387,15 +409,11 @@ export default function ProjectDetailPage() {
         )}
 
         {activeTab === "members" && (
-          <MembersTab
-            members={mockMembers}
-            onInvite={() => setInviteOpen(true)}
-            t={t}
-          />
+          <MembersTab members={members} onInvite={() => setInviteOpen(true)} t={t} />
         )}
 
         {activeTab === "memory" && (
-          <MemoryTab content={mockMemory} t={t} />
+          <MemoryTab projectId={project.id} content={memoryContent} t={t} />
         )}
       </main>
 
@@ -409,15 +427,27 @@ export default function ProjectDetailPage() {
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label htmlFor="rename-name">{t("projects.projectName")}</Label>
-              <Input id="rename-name" value={renameName} onChange={(e) => setRenameName(e.target.value)} />
+              <Input
+                id="rename-name"
+                value={renameName}
+                onChange={(e) => setRenameName(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="rename-desc">{t("projects.description")}</Label>
-              <Input id="rename-desc" value={renameDesc} onChange={(e) => setRenameDesc(e.target.value)} />
+              <Input
+                id="rename-desc"
+                value={renameDesc}
+                onChange={(e) => setRenameDesc(e.target.value)}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleRename} disabled={renaming || !renameName.trim()} className="cursor-pointer">
+            <Button
+              onClick={handleRename}
+              disabled={renaming || !renameName.trim()}
+              className="cursor-pointer"
+            >
               {renaming ? t("common.saving") : t("common.save")}
             </Button>
           </DialogFooter>
@@ -433,13 +463,28 @@ export default function ProjectDetailPage() {
           </DialogHeader>
           <div className="space-y-2 py-2">
             <Label htmlFor="delete-confirm">
-              Type <span className="font-mono font-medium text-foreground">{project.name}</span> to confirm
+              Type <span className="font-mono font-medium text-foreground">{project.name}</span> to
+              confirm
             </Label>
-            <Input id="delete-confirm" value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} />
+            <Input
+              id="delete-confirm"
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+            />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteOpen(false)} className="cursor-pointer">{t("common.cancel")}</Button>
-            <Button onClick={handleDelete} disabled={deleting || deleteConfirm !== project.name} className="cursor-pointer bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteOpen(false)}
+              className="cursor-pointer"
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={handleDelete}
+              disabled={deleting || deleteConfirm !== project.name}
+              className="cursor-pointer bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               {deleting ? t("common.loading") : t("project.deleteProject")}
             </Button>
           </DialogFooter>
@@ -457,7 +502,13 @@ export default function ProjectDetailPage() {
             <div className="space-y-4 py-2">
               <div className="space-y-2">
                 <Label htmlFor="invite-email">{t("auth.email")}</Label>
-                <Input id="invite-email" type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required />
+                <Input
+                  id="invite-email"
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label>{t("project.role")}</Label>
@@ -468,7 +519,9 @@ export default function ProjectDetailPage() {
                       type="button"
                       onClick={() => setInviteRole(role)}
                       className={`cursor-pointer rounded-lg border px-3 py-1.5 text-sm transition-colors ${
-                        inviteRole === role ? "border-primary bg-primary/10 text-primary" : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
+                        inviteRole === role
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
                       }`}
                     >
                       {role.charAt(0).toUpperCase() + role.slice(1)}
@@ -476,10 +529,18 @@ export default function ProjectDetailPage() {
                   ))}
                 </div>
               </div>
-              {inviteSuccess && <p className="text-sm text-emerald-400">{t("project.inviteSent")} {inviteSuccess}</p>}
+              {inviteSuccess && (
+                <p className="text-sm text-emerald-400">
+                  {t("project.inviteSent")} {inviteSuccess}
+                </p>
+              )}
             </div>
             <DialogFooter>
-              <Button type="submit" disabled={inviting || !inviteEmail.trim()} className="cursor-pointer">
+              <Button
+                type="submit"
+                disabled={inviting || !inviteEmail.trim()}
+                className="cursor-pointer"
+              >
                 {inviting ? t("common.loading") : t("common.invite")}
               </Button>
             </DialogFooter>
@@ -521,11 +582,31 @@ function OverviewTab({
         </div>
         <div className="prose prose-invert prose-sm max-w-none px-5 py-4">
           {readme.split("\n").map((line, i) => {
-            if (line.startsWith("## ")) return <h2 key={i} className="mt-4 first:mt-0 text-base font-semibold">{line.slice(3)}</h2>;
-            if (line.startsWith("1. ") || line.startsWith("2. ") || line.startsWith("3. ") || line.startsWith("4. ") || line.startsWith("5. ")) {
-              return <p key={i} className="ml-4 text-sm text-foreground/70">{line}</p>;
+            if (line.startsWith("## "))
+              return (
+                <h2 key={i} className="mt-4 first:mt-0 text-base font-semibold">
+                  {line.slice(3)}
+                </h2>
+              );
+            if (
+              line.startsWith("1. ") ||
+              line.startsWith("2. ") ||
+              line.startsWith("3. ") ||
+              line.startsWith("4. ") ||
+              line.startsWith("5. ")
+            ) {
+              return (
+                <p key={i} className="ml-4 text-sm text-foreground/70">
+                  {line}
+                </p>
+              );
             }
-            if (line.trim()) return <p key={i} className="text-sm text-foreground/70">{line}</p>;
+            if (line.trim())
+              return (
+                <p key={i} className="text-sm text-foreground/70">
+                  {line}
+                </p>
+              );
             return null;
           })}
         </div>
@@ -554,17 +635,34 @@ function OverviewTab({
             {changes.slice(0, 3).map((change) => {
               const config = stageConfig[change.stage] ?? stageConfig.draft;
               return (
-                <Link key={String(change.id)} href={`/projects/${projectSlug}/changes/${change.id}`}>
+                <Link
+                  key={String(change.id)}
+                  href={`/projects/${projectSlug}/changes/${change.id}`}
+                >
                   <div className="flex cursor-pointer items-center justify-between px-5 py-3 transition-colors hover:bg-accent/50">
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-7 w-7 items-center justify-center rounded-md border ${config.color}`}>
-                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={config.icon} />
+                      <div
+                        className={`flex h-7 w-7 items-center justify-center rounded-md border ${config.color}`}
+                      >
+                        <svg
+                          className="h-3 w-3"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d={config.icon}
+                          />
                         </svg>
                       </div>
                       <span className="text-sm">{change.name}</span>
                     </div>
-                    <span className={`text-xs font-medium ${config.color.split(" ")[1]}`}>{config.label}</span>
+                    <span className={`text-xs font-medium ${config.color.split(" ")[1]}`}>
+                      {config.label}
+                    </span>
                   </div>
                 </Link>
               );
@@ -609,8 +707,16 @@ function ChangesTab({
               className="pl-9 bg-card/50 border-border/40 focus:border-primary/50 transition-colors"
             />
           </div>
-          <Button type="submit" disabled={creating || !newChangeName.trim()} className="cursor-pointer px-5">
-            {creating ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" /> : t("common.create")}
+          <Button
+            type="submit"
+            disabled={creating || !newChangeName.trim()}
+            className="cursor-pointer px-5"
+          >
+            {creating ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+            ) : (
+              t("common.create")
+            )}
           </Button>
         </div>
       </form>
@@ -630,16 +736,36 @@ function ChangesTab({
             const config = stageConfig[change.stage] ?? stageConfig.draft;
             return (
               <Link key={String(change.id)} href={`/projects/${projectSlug}/changes/${change.id}`}>
-                <div className={`group flex cursor-pointer items-center justify-between rounded-xl border border-border/40 bg-card/50 px-5 py-4 transition-all duration-200 hover:border-primary/20 hover:bg-card/80 hover:shadow-lg ${config.glow}`}>
+                <div
+                  className={`group flex cursor-pointer items-center justify-between rounded-xl border border-border/40 bg-card/50 px-5 py-4 transition-all duration-200 hover:border-primary/20 hover:bg-card/80 hover:shadow-lg ${config.glow}`}
+                >
                   <div className="flex items-center gap-4">
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${config.color}`}>
-                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={config.icon} />
+                    <div
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg border ${config.color}`}
+                    >
+                      <svg
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d={config.icon}
+                        />
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm font-medium group-hover:text-foreground transition-colors">{change.name}</p>
-                      <span className={`inline-flex items-center text-xs font-medium mt-0.5 ${config.color.split(" ")[1]}`}>{config.label}</span>
+                      <p className="text-sm font-medium group-hover:text-foreground transition-colors">
+                        {change.name}
+                      </p>
+                      <span
+                        className={`inline-flex items-center text-xs font-medium mt-0.5 ${config.color.split(" ")[1]}`}
+                      >
+                        {config.label}
+                      </span>
                     </div>
                   </div>
                   <ChevronRight className="size-4 text-muted-foreground/30 transition-all duration-200 group-hover:text-muted-foreground group-hover:translate-x-0.5" />
@@ -673,7 +799,9 @@ function MembersTab({
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">{members.length} {t("project.membersCount")}</span>
+        <span className="text-sm text-muted-foreground">
+          {members.length} {t("project.membersCount")}
+        </span>
         <button
           onClick={onInvite}
           className="flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 transition-colors"
@@ -684,7 +812,10 @@ function MembersTab({
       </div>
       <div className="space-y-2">
         {members.map((member) => (
-          <div key={member.email} className="flex items-center justify-between rounded-xl border border-border/40 bg-card/50 px-5 py-3.5">
+          <div
+            key={member.email}
+            className="flex items-center justify-between rounded-xl border border-border/40 bg-card/50 px-5 py-3.5"
+          >
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold uppercase text-primary">
                 {member.name.charAt(0)}
@@ -694,7 +825,9 @@ function MembersTab({
                 <p className="text-xs text-muted-foreground">{member.email}</p>
               </div>
             </div>
-            <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${roleColor[member.role] || roleColor.Member}`}>
+            <span
+              className={`rounded-md px-2 py-0.5 text-xs font-medium ${roleColor[member.role] || roleColor.Member}`}
+            >
               {member.role}
             </span>
           </div>
@@ -707,29 +840,43 @@ function MembersTab({
 // ─── Memory Tab ─────────────────────────────────────────
 
 function MemoryTab({
+  projectId,
   content,
   t,
 }: {
+  projectId: bigint;
   content: string;
   t: (key: string) => string;
 }) {
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(content);
+  const [currentContent, setCurrentContent] = useState(content);
 
   function renderMarkdown(text: string) {
     return text.split("\n").map((line, i) => {
       if (line.startsWith("## ")) {
-        return <h2 key={i} className="mt-5 first:mt-0 mb-2 text-sm font-semibold text-foreground">{line.slice(3)}</h2>;
+        return (
+          <h2 key={i} className="mt-5 first:mt-0 mb-2 text-sm font-semibold text-foreground">
+            {line.slice(3)}
+          </h2>
+        );
       }
       if (line.startsWith("- ")) {
         return (
-          <p key={i} className="ml-3 py-0.5 text-sm text-foreground/70 before:content-['•'] before:mr-2 before:text-muted-foreground/50">
+          <p
+            key={i}
+            className="ml-3 py-0.5 text-sm text-foreground/70 before:content-['•'] before:mr-2 before:text-muted-foreground/50"
+          >
             {line.slice(2)}
           </p>
         );
       }
       if (line.trim()) {
-        return <p key={i} className="py-0.5 text-sm text-foreground/70">{line}</p>;
+        return (
+          <p key={i} className="py-0.5 text-sm text-foreground/70">
+            {line}
+          </p>
+        );
       }
       return <div key={i} className="h-2" />;
     });
@@ -751,21 +898,30 @@ function MemoryTab({
             <span className="text-sm font-medium">{t("project.memory")}</span>
           </div>
           <button
-            onClick={() => {
+            onClick={async () => {
               if (editing) {
-                // TODO: save to server
+                try {
+                  await memoryClient.saveMemory({ projectId, content: editContent });
+                  setCurrentContent(editContent);
+                } catch {
+                  // handle error
+                }
                 setEditing(false);
               } else {
-                setEditContent(content);
+                setEditContent(currentContent);
                 setEditing(true);
               }
             }}
             className="flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             {editing ? (
-              <><Save className="size-3" /> {t("common.save")}</>
+              <>
+                <Save className="size-3" /> {t("common.save")}
+              </>
             ) : (
-              <><Pencil className="size-3" /> {t("common.edit")}</>
+              <>
+                <Pencil className="size-3" /> {t("common.edit")}
+              </>
             )}
           </button>
         </div>
@@ -779,14 +935,19 @@ function MemoryTab({
               rows={Math.max(10, editContent.split("\n").length + 2)}
               autoFocus
             />
-          ) : content.trim() ? (
-            renderMarkdown(content)
+          ) : currentContent.trim() ? (
+            renderMarkdown(currentContent)
           ) : (
             <div className="py-8 text-center">
               <Brain className="mx-auto mb-3 size-8 text-muted-foreground/30" />
               <p className="text-sm text-muted-foreground">{t("project.noMemories")}</p>
               <button
-                onClick={() => { setEditContent("## Domain Rules\n- \n\n## Business Context\n\n\n## Constraints\n- "); setEditing(true); }}
+                onClick={() => {
+                  setEditContent(
+                    "## Domain Rules\n- \n\n## Business Context\n\n\n## Constraints\n- ",
+                  );
+                  setEditing(true);
+                }}
                 className="mt-2 cursor-pointer text-xs text-primary hover:text-primary/80 transition-colors"
               >
                 {t("project.addFirstMemory")}

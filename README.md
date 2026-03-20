@@ -23,6 +23,33 @@ That's where Colign comes in.
 
 **AI that writes code already exists. Colign makes sure your team is looking at the same thing before the code gets written.**
 
+## Spec-Driven Development
+
+Colign follows a **Spec-Driven Development (SDD)** approach. When AI can generate code in minutes, the bottleneck shifts from "can we build it?" to "have we defined it correctly?"
+
+### Two-layer spec architecture
+
+Traditional PRDs tried to put everything in one 30-page document. Colign splits this into two layers:
+
+**Project Memory** — Strategic context that rarely changes. Domain rules, business constraints, target users, and technical decisions. Written once, referenced by every Change.
+
+**Structured Proposal** — Tactical spec for each Change. Lightweight, structured, and designed for both humans and AI agents to read:
+
+| Section | Required | Purpose |
+|---------|:--------:|---------|
+| **Problem** | Yes | Why is this change needed? |
+| **Scope** | Yes | What specifically will change? |
+| **Out of Scope** | No | What is explicitly NOT part of this? |
+| **Approach** | No | Technical direction and rationale |
+| **Acceptance Criteria** | Yes | Given/When/Then scenarios |
+
+### Two paths for AI integration
+
+1. **Platform AI** — Use your own API key to generate structured specs directly in Colign
+2. **External AI** — Connect Claude Code, Cursor, or other AI tools via MCP Server to read/write specs in Colign
+
+> For design decisions and competitive analysis behind this structure, see [docs/structured-proposal.md](docs/structured-proposal.md).
+
 ## Getting Started
 
 ```bash

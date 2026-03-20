@@ -3,8 +3,8 @@ package models
 import "testing"
 
 func TestDocumentTypes(t *testing.T) {
-	types := []DocumentType{DocProposal, DocDesign, DocSpec, DocTasks}
-	expected := []string{"proposal", "design", "spec", "tasks"}
+	types := []DocumentType{DocProposal, DocDesign, DocTasks}
+	expected := []string{"proposal", "design", "tasks"}
 
 	for i, dt := range types {
 		if string(dt) != expected[i] {

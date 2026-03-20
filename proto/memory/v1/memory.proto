@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package memory.v1;
+
+option go_package = "github.com/gobenpark/colign/gen/proto/memory/v1;memoryv1";
+
+import "google/protobuf/timestamp.proto";
+
+message ProjectMemory {
+  int64 id = 1;
+  int64 project_id = 2;
+  string content = 3;
+  int64 updated_by = 4;
+  string updated_by_name = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message GetMemoryRequest {
+  int64 project_id = 1;
+}
+
+message GetMemoryResponse {
+  ProjectMemory memory = 1;
+}
+
+message SaveMemoryRequest {
+  int64 project_id = 1;
+  string content = 2;
+}
+
+message SaveMemoryResponse {
+  ProjectMemory memory = 1;
+}
+
+service MemoryService {
+  rpc GetMemory(GetMemoryRequest) returns (GetMemoryResponse) {}
+  rpc SaveMemory(SaveMemoryRequest) returns (SaveMemoryResponse) {}
+}

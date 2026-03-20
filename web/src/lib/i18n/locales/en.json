@@ -97,6 +97,20 @@
     "notFoundDescription": "This project or change does not exist, or you don't have access.",
     "viewSnapshot": "Document snapshot"
   },
+  "proposal": {
+    "problem": "Problem",
+    "problemPlaceholder": "Why is this change needed? What problem does it solve?",
+    "scope": "Scope",
+    "scopePlaceholder": "What will change? List specific capabilities, modifications, or removals.",
+    "outOfScope": "Out of Scope",
+    "outOfScopePlaceholder": "What is explicitly NOT part of this change?",
+    "approach": "Technical Approach",
+    "approachPlaceholder": "How will this be implemented? Key technical decisions and rationale.",
+    "required": "Required",
+    "optional": "Optional",
+    "collapse": "Collapse",
+    "expand": "Expand"
+  },
   "tasks": {
     "addTask": "Add task...",
     "viewKanban": "Board",
@@ -115,7 +129,7 @@
     "unassigned": "Unassigned"
   },
   "sidebar": {
-    "home": "Home",
+    "dashboard": "Dashboard",
     "inbox": "Inbox",
     "search": "Search",
     "projects": "Projects",
@@ -129,6 +143,43 @@
     "profileSettings": "Profile Settings",
     "appearance": "Appearance",
     "logOut": "Log Out"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "projects": "Projects",
+    "activeChanges": "Active Changes",
+    "inReview": "In Review",
+    "ready": "Ready",
+    "recentActivity": "Recent Activity",
+    "recentChanges": "Recent Changes",
+    "noActivity": "No recent activity",
+    "noChanges": "No changes yet",
+    "createdProject": "created project",
+    "createdChange": "created change",
+    "movedTo": "moved to",
+    "viewAll": "View all",
+    "in": "in"
+  },
+  "inbox": {
+    "title": "Inbox",
+    "all": "All",
+    "unread": "Unread",
+    "reviewRequests": "Review Requests",
+    "stageChanges": "Stage Changes",
+    "comments": "Comments",
+    "mentions": "Mentions",
+    "invites": "Invites",
+    "markAllRead": "Mark all read",
+    "markRead": "Mark as read",
+    "markUnread": "Mark as unread",
+    "noNotifications": "You're all caught up",
+    "noNotificationsDesc": "No new notifications right now",
+    "requestedReview": "requested your review on",
+    "commentedOn": "commented on",
+    "mentionedYou": "mentioned you in",
+    "movedTo": "moved to",
+    "invitedYou": "invited you to",
+    "in": "in"
   },
   "comments": {
     "addComment": "Add Comment",

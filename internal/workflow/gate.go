@@ -5,8 +5,6 @@ import "github.com/gobenpark/colign/internal/models"
 type GateInput struct {
 	HasProposal     bool
 	HasDesign       bool
-	SpecsCount      int
-	SpecsDone       int
 	ApprovalsNeeded int
 	ApprovalsDone   int
 }
@@ -35,21 +33,13 @@ func (g *GateChecker) Check(stage models.ChangeStage, input GateInput) []GateCon
 			},
 		}
 	case models.StageDesign:
-		conditions := []GateCondition{
+		return []GateCondition{
 			{
 				Name:        "design",
 				Description: "Design document saved",
 				Met:         input.HasDesign,
 			},
 		}
-		if input.SpecsCount > 0 {
-			conditions = append(conditions, GateCondition{
-				Name:        "specs",
-				Description: "All spec documents completed",
-				Met:         input.SpecsDone >= input.SpecsCount,
-			})
-		}
-		return conditions
 	case models.StageReview:
 		return []GateCondition{
 			{

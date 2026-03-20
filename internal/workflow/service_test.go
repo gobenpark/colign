@@ -14,13 +14,11 @@ func TestShouldAutoAdvance(t *testing.T) {
 		t.Error("should auto-advance from Draft when proposal exists")
 	}
 
-	// Design with everything done → should advance
+	// Design with design done → should advance
 	if !gate.AllMet(models.StageDesign, GateInput{
-		HasDesign:  true,
-		SpecsCount: 2,
-		SpecsDone:  2,
+		HasDesign: true,
 	}) {
-		t.Error("should auto-advance from Design when design+specs complete")
+		t.Error("should auto-advance from Design when design complete")
 	}
 
 	// Review with approvals done → should advance

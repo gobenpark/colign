@@ -64,13 +64,12 @@ const server = new Hocuspocus({
       );
 
       if (result.rows.length > 0 && result.rows[0].content) {
-        // Apply existing HTML content to Y.js doc
-        // The content will be synced to connecting clients
         const yXmlFragment = document.getXmlFragment("default");
         if (yXmlFragment.length === 0) {
-          // Store HTML as metadata so clients can initialize from it
+          // Fix corrupted HTML with Tiptap node names
+          const html = fixTiptapNodeNames(result.rows[0].content);
           const yMeta = document.getMap("meta");
-          yMeta.set("initialHtml", result.rows[0].content);
+          yMeta.set("initialHtml", html);
         }
       }
     } catch (err) {
@@ -115,38 +114,140 @@ const server = new Hocuspocus({
   },
 });
 
+// Fix corrupted HTML that used Tiptap node names instead of HTML tags
+function fixTiptapNodeNames(html: string): string {
+  return html
+    .replace(/<paragraph>/g, "<p>")
+    .replace(/<\/paragraph>/g, "</p>")
+    .replace(/<heading level="(\d)">/g, (_m, level) => `<h${level}>`)
+    .replace(/<\/heading>/g, (match, offset, str) => {
+      // Find the matching opening tag to get the level
+      const before = str.substring(0, offset);
+      const lastOpen = before.lastIndexOf("<h");
+      if (lastOpen >= 0) {
+        const level = before[lastOpen + 2];
+        return `</h${level}>`;
+      }
+      return "</h2>";
+    })
+    .replace(/<bulletList>/g, "<ul>")
+    .replace(/<\/bulletList>/g, "</ul>")
+    .replace(/<orderedList>/g, "<ol>")
+    .replace(/<\/orderedList>/g, "</ol>")
+    .replace(/<listItem>/g, "<li>")
+    .replace(/<\/listItem>/g, "</li>")
+    .replace(/<codeBlock[^>]*>/g, "<pre><code>")
+    .replace(/<\/codeBlock>/g, "</code></pre>")
+    .replace(/<hardBreak\s*\/?>/g, "<br />")
+    .replace(/<horizontalRule\s*\/?>/g, "<hr />");
+}
+
+// Map Tiptap node names to HTML tags
+const NODE_TO_TAG: Record<string, string> = {
+  paragraph: "p",
+  bulletList: "ul",
+  orderedList: "ol",
+  listItem: "li",
+  blockquote: "blockquote",
+  codeBlock: "pre",
+  hardBreak: "br",
+  horizontalRule: "hr",
+  taskList: "ul",
+  taskItem: "li",
+};
+
+const SELF_CLOSING = new Set(["br", "hr", "img"]);
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function yXmlFragmentToHtml(fragment: Y.XmlFragment): string {
   let html = "";
   fragment.forEach((item) => {
     if (item instanceof Y.XmlElement) {
       html += xmlElementToHtml(item);
     } else if (item instanceof Y.XmlText) {
-      html += item.toString();
+      html += xmlTextToHtml(item);
     }
   });
   return html;
 }
 
+function xmlTextToHtml(text: Y.XmlText): string {
+  let result = "";
+  const delta = text.toDelta();
+  for (const op of delta) {
+    if (typeof op.insert === "string") {
+      let content = escapeHtml(op.insert);
+      if (op.attributes) {
+        if (op.attributes.bold) content = `<strong>${content}</strong>`;
+        if (op.attributes.italic) content = `<em>${content}</em>`;
+        if (op.attributes.code) content = `<code>${content}</code>`;
+        if (op.attributes.underline) content = `<u>${content}</u>`;
+        if (op.attributes.strike) content = `<s>${content}</s>`;
+        if (op.attributes.commentHighlight) {
+          const commentId = op.attributes.commentHighlight.commentId;
+          if (commentId) {
+            content = `<span data-comment-id="${commentId}" class="comment-highlight">${content}</span>`;
+          }
+        }
+      }
+      result += content;
+    }
+  }
+  return result;
+}
+
 function xmlElementToHtml(element: Y.XmlElement): string {
-  const tag = element.nodeName;
+  const nodeName = element.nodeName;
   const attrs = element.getAttributes();
-  let attrStr = "";
-  for (const [key, value] of Object.entries(attrs)) {
-    attrStr += ` ${key}="${value}"`;
+
+  // Resolve tag name
+  let tag: string;
+  if (nodeName === "heading") {
+    const level = attrs.level || 1;
+    tag = `h${level}`;
+  } else {
+    tag = NODE_TO_TAG[nodeName] || nodeName;
   }
 
+  // Build attribute string (skip Tiptap-internal attrs)
+  let attrStr = "";
+  for (const [key, value] of Object.entries(attrs)) {
+    if (nodeName === "heading" && key === "level") continue;
+    if (nodeName === "taskItem" && key === "checked") {
+      attrStr += ` data-checked="${value}"`;
+      continue;
+    }
+    attrStr += ` ${key}="${value}"`;
+  }
+  if (nodeName === "taskList") attrStr += ' data-type="taskList"';
+  if (nodeName === "taskItem") attrStr += ' data-type="taskItem"';
+
+  // Self-closing tags
+  if (SELF_CLOSING.has(tag)) {
+    return `<${tag}${attrStr} />`;
+  }
+
+  // Build inner content
   let inner = "";
   element.forEach((child) => {
     if (child instanceof Y.XmlElement) {
       inner += xmlElementToHtml(child);
     } else if (child instanceof Y.XmlText) {
-      inner += child.toString();
+      inner += xmlTextToHtml(child);
     }
   });
 
-  if (["br", "hr", "img"].includes(tag)) {
-    return `<${tag}${attrStr} />`;
+  // codeBlock wraps content in <code>
+  if (nodeName === "codeBlock") {
+    inner = `<code>${inner}</code>`;
   }
+
   return `<${tag}${attrStr}>${inner}</${tag}>`;
 }
 

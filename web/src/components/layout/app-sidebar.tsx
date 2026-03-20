@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home,
+  LayoutDashboard,
   Inbox,
   Search,
   Plus,
@@ -58,9 +58,7 @@ export function AppSidebar() {
     async function loadProjects() {
       try {
         const res = await projectClient.listProjects({});
-        setProjects(
-          res.projects.map((p) => ({ id: p.id, name: p.name, slug: p.slug })),
-        );
+        setProjects(res.projects.map((p) => ({ id: p.id, name: p.name, slug: p.slug })));
       } catch {
         // not loaded
       }
@@ -69,7 +67,7 @@ export function AppSidebar() {
   }, [currentOrg, pathname]);
 
   const navItems = [
-    { label: t("sidebar.home"), href: "/home", icon: Home },
+    { label: t("sidebar.dashboard"), href: "/dashboard", icon: LayoutDashboard },
     { label: t("sidebar.inbox"), href: "/inbox", icon: Inbox },
     { label: t("sidebar.search"), href: "/search", icon: Search },
   ];
@@ -135,7 +133,10 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
               <SidebarMenuItem>
-                <SidebarMenuButton tooltip={t("sidebar.newProject")} render={<Link href="/projects/new" />}>
+                <SidebarMenuButton
+                  tooltip={t("sidebar.newProject")}
+                  render={<Link href="/projects/new" />}
+                >
                   <Plus className="size-4" />
                   <span className="text-muted-foreground">{t("sidebar.newProject")}</span>
                 </SidebarMenuButton>
@@ -148,8 +149,15 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip={state === "expanded" ? t("sidebar.collapse") : t("sidebar.expand")} onClick={toggleSidebar}>
-              {state === "expanded" ? <ChevronsLeft className="size-4" /> : <ChevronsRight className="size-4" />}
+            <SidebarMenuButton
+              tooltip={state === "expanded" ? t("sidebar.collapse") : t("sidebar.expand")}
+              onClick={toggleSidebar}
+            >
+              {state === "expanded" ? (
+                <ChevronsLeft className="size-4" />
+              ) : (
+                <ChevronsRight className="size-4" />
+              )}
               <span>{state === "expanded" ? t("sidebar.collapse") : t("sidebar.expand")}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>

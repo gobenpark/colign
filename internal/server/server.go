@@ -17,6 +17,8 @@ import (
 	"github.com/gobenpark/colign/gen/proto/auth/v1/authv1connect"
 	"github.com/gobenpark/colign/gen/proto/comment/v1/commentv1connect"
 	"github.com/gobenpark/colign/gen/proto/document/v1/documentv1connect"
+	"github.com/gobenpark/colign/gen/proto/memory/v1/memoryv1connect"
+	"github.com/gobenpark/colign/gen/proto/notification/v1/notificationv1connect"
 	"github.com/gobenpark/colign/gen/proto/organization/v1/organizationv1connect"
 	"github.com/gobenpark/colign/gen/proto/project/v1/projectv1connect"
 	taskv1connect "github.com/gobenpark/colign/gen/proto/task/v1/taskv1connect"
@@ -24,6 +26,8 @@ import (
 	"github.com/gobenpark/colign/internal/acceptance"
 	"github.com/gobenpark/colign/internal/comment"
 	"github.com/gobenpark/colign/internal/document"
+	"github.com/gobenpark/colign/internal/memory"
+	"github.com/gobenpark/colign/internal/notification"
 	"github.com/gobenpark/colign/internal/organization"
 	"github.com/gobenpark/colign/internal/project"
 	"github.com/gobenpark/colign/internal/task"
@@ -119,6 +123,18 @@ func (s *Server) setupRoutes(cfg *config.Config) {
 	acConnectHandler := acceptance.NewConnectHandler(acService, s.jwtManager)
 	acPath, acHandler := acceptancev1connect.NewAcceptanceCriteriaServiceHandler(acConnectHandler)
 	s.mux.Handle(acPath, acHandler)
+
+	// Notification service (Connect)
+	notifService := notification.NewService(s.db)
+	notifConnectHandler := notification.NewConnectHandler(notifService, s.jwtManager)
+	notifPath, notifHandler := notificationv1connect.NewNotificationServiceHandler(notifConnectHandler)
+	s.mux.Handle(notifPath, notifHandler)
+
+	// Memory service (Connect)
+	memoryService := memory.NewService(s.db)
+	memoryConnectHandler := memory.NewConnectHandler(memoryService, s.jwtManager)
+	memoryPath, memoryHandler := memoryv1connect.NewMemoryServiceHandler(memoryConnectHandler)
+	s.mux.Handle(memoryPath, memoryHandler)
 }
 
 func (s *Server) Handler() http.Handler {

@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package notification.v1;
+
+option go_package = "github.com/gobenpark/colign/gen/proto/notification/v1;notificationv1";
+
+import "google/protobuf/timestamp.proto";
+
+message Notification {
+  int64 id = 1;
+  int64 user_id = 2;
+  string type = 3;
+  bool read = 4;
+  int64 actor_id = 5;
+  string actor_name = 6;
+  int64 change_id = 7;
+  string change_name = 8;
+  int64 project_id = 9;
+  string project_name = 10;
+  string project_slug = 11;
+  string stage = 12;
+  string comment_preview = 13;
+  google.protobuf.Timestamp created_at = 14;
+}
+
+message ListNotificationsRequest {
+  string filter = 1; // "all", "unread", or notification type
+}
+
+message ListNotificationsResponse {
+  repeated Notification notifications = 1;
+  int32 unread_count = 2;
+}
+
+message MarkReadRequest {
+  int64 id = 1;
+  bool read = 2;
+}
+
+message MarkReadResponse {}
+
+message MarkAllReadRequest {}
+
+message MarkAllReadResponse {}
+
+message GetUnreadCountRequest {}
+
+message GetUnreadCountResponse {
+  int32 count = 1;
+}
+
+service NotificationService {
+  rpc ListNotifications(ListNotificationsRequest) returns (ListNotificationsResponse) {}
+  rpc MarkRead(MarkReadRequest) returns (MarkReadResponse) {}
+  rpc MarkAllRead(MarkAllReadRequest) returns (MarkAllReadResponse) {}
+  rpc GetUnreadCount(GetUnreadCountRequest) returns (GetUnreadCountResponse) {}
+}

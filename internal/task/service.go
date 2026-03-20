@@ -6,8 +6,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/gobenpark/colign/internal/models"
 	"github.com/uptrace/bun"
+
+	"github.com/gobenpark/colign/internal/models"
 )
 
 var (
@@ -167,7 +168,7 @@ func (s *Service) Reorder(ctx context.Context, changeID int64, items []ReorderIt
 		err := tx.NewSelect().
 			TableExpr("tasks").
 			ColumnExpr("COUNT(*)").
-			Where("id IN (?)", bun.In(ids)).
+			Where("id IN (?)", bun.List(ids)).
 			Where("change_id = ?", changeID).
 			Scan(ctx, &count)
 		if err != nil {

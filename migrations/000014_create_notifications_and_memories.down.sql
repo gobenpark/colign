@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS project_memories CASCADE;
+ALTER TABLE changes DROP COLUMN IF EXISTS change_type;

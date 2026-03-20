@@ -97,6 +97,20 @@
     "notFoundDescription": "프로젝트 또는 Change가 존재하지 않거나 접근 권한이 없습니다.",
     "viewSnapshot": "문서 스냅샷"
   },
+  "proposal": {
+    "problem": "Problem",
+    "problemPlaceholder": "이 변경이 필요한 이유는? 어떤 문제를 해결하나요?",
+    "scope": "Scope",
+    "scopePlaceholder": "무엇이 변경되나요? 새로운 기능, 수정, 제거 사항을 구체적으로 작성하세요.",
+    "outOfScope": "Out of Scope",
+    "outOfScopePlaceholder": "이 변경에 명시적으로 포함되지 않는 것은?",
+    "approach": "Technical Approach",
+    "approachPlaceholder": "어떻게 구현할 건가요? 핵심 기술 결정과 근거를 작성하세요.",
+    "required": "필수",
+    "optional": "선택",
+    "collapse": "접기",
+    "expand": "펼치기"
+  },
   "tasks": {
     "addTask": "태스크 추가...",
     "viewKanban": "보드",
@@ -115,7 +129,7 @@
     "unassigned": "미배정"
   },
   "sidebar": {
-    "home": "홈",
+    "dashboard": "대시보드",
     "inbox": "받은함",
     "search": "검색",
     "projects": "프로젝트",
@@ -129,6 +143,43 @@
     "profileSettings": "프로필 설정",
     "appearance": "외관 변경",
     "logOut": "로그아웃"
+  },
+  "dashboard": {
+    "title": "대시보드",
+    "projects": "프로젝트",
+    "activeChanges": "진행 중인 변경",
+    "inReview": "리뷰 중",
+    "ready": "준비 완료",
+    "recentActivity": "최근 활동",
+    "recentChanges": "최근 변경사항",
+    "noActivity": "최근 활동이 없습니다",
+    "noChanges": "변경사항이 없습니다",
+    "createdProject": "프로젝트 생성",
+    "createdChange": "변경 생성",
+    "movedTo": "으로 이동",
+    "viewAll": "전체 보기",
+    "in": ""
+  },
+  "inbox": {
+    "title": "받은함",
+    "all": "전체",
+    "unread": "읽지 않음",
+    "reviewRequests": "리뷰 요청",
+    "stageChanges": "단계 변경",
+    "comments": "코멘트",
+    "mentions": "멘션",
+    "invites": "초대",
+    "markAllRead": "모두 읽음",
+    "markRead": "읽음 표시",
+    "markUnread": "읽지 않음 표시",
+    "noNotifications": "모두 확인했습니다",
+    "noNotificationsDesc": "새로운 알림이 없습니다",
+    "requestedReview": "님이 리뷰를 요청했습니다",
+    "commentedOn": "님이 코멘트했습니다",
+    "mentionedYou": "님이 멘션했습니다",
+    "movedTo": "으로 이동됨",
+    "invitedYou": "님이 초대했습니다",
+    "in": ""
   },
   "comments": {
     "addComment": "코멘트 추가",

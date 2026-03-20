@@ -140,49 +140,44 @@ export function TaskBoard({ changeId, members }: TaskBoardProps) {
     [changeId],
   );
 
-  const handleUpdate = useCallback(
-    async (id: bigint, fields: Record<string, unknown>) => {
-      // Snapshot for rollback
-      let prevTasks: TaskType[] = [];
-      setTasks((prev) => {
-        prevTasks = prev;
-        return prev.map((t) =>
-          t.id === id ? { ...t, ...(fields as Partial<TaskType>) } : t,
-        );
-      });
+  const handleUpdate = useCallback(async (id: bigint, fields: Record<string, unknown>) => {
+    // Snapshot for rollback
+    let prevTasks: TaskType[] = [];
+    setTasks((prev) => {
+      prevTasks = prev;
+      return prev.map((t) => (t.id === id ? { ...t, ...(fields as Partial<TaskType>) } : t));
+    });
 
-      const req: {
-        id: bigint;
-        title?: string;
-        description?: string;
-        status?: string;
-        specRef?: string;
-        assigneeId?: bigint;
-        clearAssignee?: boolean;
-      } = { id };
+    const req: {
+      id: bigint;
+      title?: string;
+      description?: string;
+      status?: string;
+      specRef?: string;
+      assigneeId?: bigint;
+      clearAssignee?: boolean;
+    } = { id };
 
-      if ("title" in fields) req.title = fields.title as string;
-      if ("description" in fields) req.description = fields.description as string;
-      if ("status" in fields) req.status = fields.status as string;
-      if ("specRef" in fields) req.specRef = fields.specRef as string;
-      if ("assigneeId" in fields) {
-        const val = fields.assigneeId;
-        if (val == null) {
-          req.clearAssignee = true;
-        } else {
-          req.assigneeId = val as bigint;
-        }
+    if ("title" in fields) req.title = fields.title as string;
+    if ("description" in fields) req.description = fields.description as string;
+    if ("status" in fields) req.status = fields.status as string;
+    if ("specRef" in fields) req.specRef = fields.specRef as string;
+    if ("assigneeId" in fields) {
+      const val = fields.assigneeId;
+      if (val == null) {
+        req.clearAssignee = true;
+      } else {
+        req.assigneeId = val as bigint;
       }
+    }
 
-      try {
-        await taskClient.updateTask(req);
-      } catch (err) {
-        console.error("Failed to update task:", err);
-        setTasks(prevTasks);
-      }
-    },
-    [],
-  );
+    try {
+      await taskClient.updateTask(req);
+    } catch (err) {
+      console.error("Failed to update task:", err);
+      setTasks(prevTasks);
+    }
+  }, []);
 
   const handleUndo = useCallback(() => {
     if (!pendingDelete) return;
@@ -302,10 +297,6 @@ export function TaskBoard({ changeId, members }: TaskBoardProps) {
             <div key={i} className="h-16 animate-pulse rounded-md bg-muted" />
           ))}
         </div>
-      ) : tasks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-          <p className="text-sm">{t("tasks.noTasks")}</p>
-        </div>
       ) : viewMode === "kanban" ? (
         <KanbanView
           tasks={tasks}
@@ -329,10 +320,7 @@ export function TaskBoard({ changeId, members }: TaskBoardProps) {
       {pendingDelete && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-lg bg-foreground px-4 py-2.5 text-background shadow-lg">
           <span className="text-sm">{t("tasks.deleteUndo")}</span>
-          <button
-            onClick={handleUndo}
-            className="cursor-pointer text-sm font-medium underline"
-          >
+          <button onClick={handleUndo} className="cursor-pointer text-sm font-medium underline">
             {t("tasks.undo")}
           </button>
         </div>

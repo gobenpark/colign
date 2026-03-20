@@ -37,18 +37,3 @@ type CommentReply struct {
 	Comment *Comment `bun:"rel:belongs-to,join:comment_id=id"`
 	User    *User    `bun:"rel:belongs-to,join:user_id=id"`
 }
-
-type Notification struct {
-	bun.BaseModel `bun:"table:notifications,alias:n"`
-
-	ID        int64     `bun:"id,pk,autoincrement"`
-	UserID    int64     `bun:"user_id,notnull"`
-	Type      string    `bun:"type,notnull"` // comment, review, stage_change
-	Title     string    `bun:"title,notnull"`
-	Body      string    `bun:"body"`
-	Link      string    `bun:"link"`
-	Read      bool      `bun:"read,notnull,default:false"`
-	CreatedAt time.Time `bun:"created_at,notnull,default:current_timestamp"`
-
-	User *User `bun:"rel:belongs-to,join:user_id=id"`
-}

@@ -165,6 +165,9 @@ export function DocumentTab({ changeId, docType, currentStage }: DocumentTabProp
           currentUserId={payload?.user_id}
           editorDom={editorDom}
           refreshRef={commentRefreshRef}
+          onRemoveHighlight={(commentId) => {
+            editorRef.current?.removeHighlight(commentId);
+          }}
         />
       </div>
 
