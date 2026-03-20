@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Header } from "@/components/layout/header";
 import { useI18n } from "@/lib/i18n";
 import { projectClient } from "@/lib/project";
 
@@ -51,26 +50,18 @@ export default function ProjectsPage() {
 
   return (
     <div className="min-h-screen">
-      <Header
-        actions={
+      <main className="mx-auto max-w-6xl px-6 py-10">
+        <div className="mb-8 flex items-center justify-between">
+          <h1 className="text-2xl font-semibold tracking-tight">{t("projects.title")}</h1>
           <Link href="/projects/new">
             <Button size="sm" className="cursor-pointer">
               <svg className="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               {t("projects.newProject")}
             </Button>
           </Link>
-        }
-      />
-
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <h1 className="mb-8 text-2xl font-semibold tracking-tight">{t("projects.title")}</h1>
+        </div>
 
         {projects.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/40 bg-card/30 py-20">

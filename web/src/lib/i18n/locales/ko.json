@@ -61,6 +61,22 @@
     "applyToSpec": "스펙에 반영",
     "creating": "생성 중..."
   },
+  "sidebar": {
+    "home": "홈",
+    "inbox": "받은함",
+    "search": "검색",
+    "projects": "프로젝트",
+    "newProject": "새 프로젝트",
+    "settings": "설정",
+    "profile": "프로필",
+    "collapse": "접기",
+    "expand": "펼치기",
+    "switchOrg": "조직 전환",
+    "comingSoon": "준비 중",
+    "profileSettings": "프로필 설정",
+    "appearance": "외관 변경",
+    "logOut": "로그아웃"
+  },
   "stages": {
     "draft": "초안",
     "design": "설계",

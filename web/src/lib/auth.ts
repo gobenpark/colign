@@ -32,3 +32,22 @@ export function clearTokens() {
 export function isLoggedIn(): boolean {
   return !!getAccessToken();
 }
+
+interface JWTPayload {
+  user_id: number;
+  email: string;
+  name: string;
+  org_id: number;
+}
+
+export function getTokenPayload(): JWTPayload | null {
+  const token = getAccessToken();
+  if (!token) return null;
+  try {
+    const base64 = token.split(".")[1];
+    const json = atob(base64);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}

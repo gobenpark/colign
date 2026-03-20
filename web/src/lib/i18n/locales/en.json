@@ -61,6 +61,22 @@
     "applyToSpec": "Apply to Spec",
     "creating": "Creating..."
   },
+  "sidebar": {
+    "home": "Home",
+    "inbox": "Inbox",
+    "search": "Search",
+    "projects": "Projects",
+    "newProject": "New Project",
+    "settings": "Settings",
+    "profile": "Profile",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "switchOrg": "Switch Organization",
+    "comingSoon": "Coming soon",
+    "profileSettings": "Profile Settings",
+    "appearance": "Appearance",
+    "logOut": "Log Out"
+  },
   "stages": {
     "draft": "Draft",
     "design": "Design",
