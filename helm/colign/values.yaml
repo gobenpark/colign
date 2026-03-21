@@ -81,7 +81,20 @@ ingress:
           service: hocuspocus
   tls: []
 
-## PostgreSQL (Bitnami subchart)
+## Database Configuration
+## Option 1: Use an existing PostgreSQL (set externalDatabase and postgresql.enabled=false)
+## Option 2: Deploy PostgreSQL via Bitnami subchart (default)
+externalDatabase:
+  host: ""
+  port: 5432
+  username: ""
+  password: ""
+  database: colign
+  schema: public    # optional, default: public
+  sslmode: disable  # disable, require, verify-ca, verify-full
+  # url: ""         # if set, overrides all fields above
+
+## PostgreSQL (Bitnami subchart) — used when externalDatabase.host is empty
 postgresql:
   enabled: true
   auth:
@@ -92,7 +105,16 @@ postgresql:
     persistence:
       size: 10Gi
 
-## Redis (Bitnami subchart)
+## Redis Configuration
+## Option 1: Use an existing Redis (set externalRedis and redis.enabled=false)
+## Option 2: Deploy Redis via Bitnami subchart (default)
+externalRedis:
+  host: ""
+  port: 6379
+  password: ""
+  # url: ""  # if set, overrides host/port/password
+
+## Redis (Bitnami subchart) — used when externalRedis.host is empty
 redis:
   enabled: true
   architecture: standalone
