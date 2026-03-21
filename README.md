@@ -60,6 +60,51 @@ Traditional PRDs tried to put everything in one 30-page document. Colign splits 
 
 > For design decisions and competitive analysis behind this structure, see [docs/structured-proposal.md](docs/structured-proposal.md).
 
+## Claude Code Plugin
+
+Colign ships with a [Claude Code plugin](plugins/claude-code/) that connects your terminal directly to the platform via MCP.
+
+### Install
+
+```bash
+# Set your API token (generate at Settings > AI & API Keys)
+export COLIGN_API_TOKEN=col_your_token_here
+
+# Install the plugin
+claude --plugin-dir ./plugins/claude-code
+```
+
+### Workflow Skills
+
+The plugin provides 6 skills that follow the change lifecycle:
+
+```
+/colign:onboard → /colign:explore → /colign:propose → /colign:plan → /colign:implement → /colign:complete
+```
+
+| Skill | Description |
+|-------|-------------|
+| `onboard` | Set up and verify MCP connection |
+| `explore` | Browse projects, read specs, check status |
+| `propose` | Write a structured proposal |
+| `plan` | Break proposal into implementation tasks |
+| `implement` | Code against the spec, update task progress |
+| `complete` | Verify tasks are done, advance workflow |
+
+Skills trigger automatically by context (e.g., "implement the next task") or explicitly via `/colign:implement`.
+
+### MCP Server
+
+The MCP server can also be used standalone with any MCP-compatible tool:
+
+```bash
+# Build the binary
+go build -o colign-mcp ./cmd/mcp
+
+# Configure in your AI tool
+COLIGN_API_TOKEN=col_... COLIGN_API_URL=http://localhost:8080 ./colign-mcp
+```
+
 ## Getting Started
 
 ```bash
