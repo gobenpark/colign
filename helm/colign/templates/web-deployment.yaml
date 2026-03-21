@@ -8,6 +8,11 @@ metadata:
     app.kubernetes.io/component: web
 spec:
   replicas: {{ .Values.web.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       {{- include "colign.selectorLabels" . | nindent 6 }}
@@ -18,28 +23,40 @@ spec:
         {{- include "colign.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: web
     spec:
+      terminationGracePeriodSeconds: 10
       containers:
         - name: web
           image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.web.image.pullPolicy }}
           ports:
-            - containerPort: 3000
+            - name: http
+              containerPort: 3000
               protocol: TCP
           env:
             - name: NEXT_PUBLIC_API_URL
               value: {{ if .Values.ingress.enabled }}https://{{ (index .Values.ingress.hosts 0).host }}{{ else }}http://{{ .Release.Name }}-api:{{ .Values.api.service.port }}{{ end }}
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 5"]
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            failureThreshold: 10
+            periodSeconds: 3
           livenessProbe:
             httpGet:
               path: /
-              port: 3000
-            initialDelaySeconds: 15
+              port: http
             periodSeconds: 30
+            failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /
-              port: 3000
-            initialDelaySeconds: 10
+              port: http
             periodSeconds: 10
+            failureThreshold: 3
           resources:
             {{- toYaml .Values.web.resources | nindent 12 }}
 {{- end }}

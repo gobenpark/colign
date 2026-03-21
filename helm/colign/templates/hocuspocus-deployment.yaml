@@ -8,6 +8,11 @@ metadata:
     app.kubernetes.io/component: hocuspocus
 spec:
   replicas: {{ .Values.hocuspocus.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       {{- include "colign.selectorLabels" . | nindent 6 }}
@@ -18,12 +23,14 @@ spec:
         {{- include "colign.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: hocuspocus
     spec:
+      terminationGracePeriodSeconds: 15
       containers:
         - name: hocuspocus
           image: "{{ .Values.hocuspocus.image.repository }}:{{ .Values.hocuspocus.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.hocuspocus.image.pullPolicy }}
           ports:
-            - containerPort: 1234
+            - name: ws
+              containerPort: 1234
               protocol: TCP
           env:
             - name: DATABASE_URL
@@ -33,11 +40,20 @@ spec:
                 secretKeyRef:
                   name: {{ .Release.Name }}-secrets
                   key: jwt-secret
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 5"]
           readinessProbe:
             tcpSocket:
-              port: 1234
-            initialDelaySeconds: 5
+              port: ws
             periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: ws
+            periodSeconds: 30
+            failureThreshold: 3
           resources:
             {{- toYaml .Values.hocuspocus.resources | nindent 12 }}
 {{- end }}
