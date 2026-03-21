@@ -23,6 +23,16 @@ That's where Colign comes in.
 
 **AI that writes code already exists. Colign makes sure your team is looking at the same thing before the code gets written.**
 
+## Features
+
+- **AI Spec Generation** — Generate structured specs from a single prompt using your own API key
+- **Real-time Co-editing** — Collaborate on specs simultaneously with your team
+- **Structured Proposals** — Problem, Scope, Approach, Acceptance Criteria in a consistent format
+- **Project Memory** — Persistent context (domain rules, constraints, decisions) shared across all specs
+- **Workflow States** — Draft → Design → Review → Ready pipeline for every change
+- **MCP Server** — Connect Claude Code, Cursor, or any MCP-compatible AI tool to read/write specs
+- **Dashboard & Inbox** — Track spec status, reviews, and notifications in one place
+
 ## Spec-Driven Development
 
 Colign follows a **Spec-Driven Development (SDD)** approach. When AI can generate code in minutes, the bottleneck shifts from "can we build it?" to "have we defined it correctly?"
