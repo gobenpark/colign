@@ -28,6 +28,7 @@ import (
 	"github.com/gobenpark/colign/internal/apitoken"
 	"github.com/gobenpark/colign/internal/comment"
 	"github.com/gobenpark/colign/internal/document"
+	mcpserver "github.com/gobenpark/colign/internal/mcp"
 	"github.com/gobenpark/colign/internal/memory"
 	"github.com/gobenpark/colign/internal/notification"
 	"github.com/gobenpark/colign/internal/organization"
@@ -143,6 +144,12 @@ func (s *Server) setupRoutes(cfg *config.Config) {
 	memoryConnectHandler := memory.NewConnectHandler(memoryService, s.jwtManager, apiTokenService)
 	memoryPath, memoryHandler := memoryv1connect.NewMemoryServiceHandler(memoryConnectHandler)
 	s.mux.Handle(memoryPath, memoryHandler)
+
+	// MCP Streamable HTTP endpoint
+	// Uses per-request auth: extracts Bearer token from Authorization header
+	apiURL := fmt.Sprintf("http://localhost:%s", cfg.Port)
+	mcpHandler := mcpserver.NewStreamableHandlerWithAuth(apiURL)
+	s.mux.Handle("/mcp", mcpHandler)
 }
 
 func (s *Server) Handler() http.Handler {
@@ -162,8 +169,8 @@ func corsMiddleware(next http.Handler, allowOrigin string) http.Handler {
 		if origin == allowOrigin || strings.HasPrefix(origin, "http://localhost:") {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization, Connect-Protocol-Version")
-			w.Header().Set("Access-Control-Expose-Headers", "Content-Length")
+			w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization, Connect-Protocol-Version, Mcp-Session-Id, Last-Event-ID")
+			w.Header().Set("Access-Control-Expose-Headers", "Content-Length, Mcp-Session-Id")
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 			w.Header().Set("Access-Control-Max-Age", fmt.Sprintf("%d", int((12*time.Hour).Seconds())))
 		}
