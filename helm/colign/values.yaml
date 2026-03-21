@@ -1,5 +1,7 @@
 ## Colign Helm Chart Values
 
+imagePullSecrets: []
+
 ## API Server
 api:
   replicaCount: 1
@@ -18,7 +20,9 @@ api:
       cpu: 500m
       memory: 512Mi
   migrate:
-    enabled: true  # run DB migrations as initContainer on pod start
+    enabled: true
+  frontendURL: ""   # e.g., https://app.colign.co (defaults to internal service URL)
+  redirectBaseURL: ""  # e.g., https://api.colign.co (defaults to internal service URL)
   env:
     jwtSecret: ""  # required: set via --set or secrets
     claudeApiKey: ""

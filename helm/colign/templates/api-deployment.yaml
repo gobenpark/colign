@@ -51,9 +51,9 @@ spec:
                   name: {{ .Release.Name }}-secrets
                   key: jwt-secret
             - name: FRONTEND_URL
-              value: {{ if .Values.ingress.enabled }}https://{{ (index .Values.ingress.hosts 0).host }}{{ else }}http://{{ .Release.Name }}-web:3000{{ end }}
+              value: {{ .Values.api.frontendURL | default (printf "http://%s-web:3000" .Release.Name) | quote }}
             - name: REDIRECT_BASE_URL
-              value: {{ if .Values.ingress.enabled }}https://{{ (index .Values.ingress.hosts 0).host }}{{ else }}http://{{ .Release.Name }}-api:8080{{ end }}
+              value: {{ .Values.api.redirectBaseURL | default (printf "http://%s-api:8080" .Release.Name) | quote }}
             {{- if .Values.api.env.claudeApiKey }}
             - name: CLAUDE_API_KEY
               valueFrom:
