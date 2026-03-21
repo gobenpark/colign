@@ -1,0 +1,12 @@
+{
+  "name": "colign",
+  "description": "Claude Code integration for Colign — AI-powered spec management platform. Read, write, and manage specs directly from Claude Code.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Colign",
+    "url": "https://github.com/gobenpark/colign"
+  },
+  "homepage": "https://github.com/gobenpark/colign",
+  "repository": "https://github.com/gobenpark/colign",
+  "license": "MIT"
+}

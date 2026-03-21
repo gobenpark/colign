@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "colign": {
+      "command": "colign-mcp",
+      "args": [],
+      "env": {
+        "COLIGN_API_TOKEN": "${COLIGN_API_TOKEN}",
+        "COLIGN_API_URL": "${COLIGN_API_URL}"
+      }
+    }
+  }
+}
