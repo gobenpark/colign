@@ -145,13 +145,99 @@ func (h *ConnectHandler) InviteOrgMember(ctx context.Context, req *connect.Reque
 		role = "member"
 	}
 
-	member, err := h.service.InviteMember(ctx, claims.OrgID, req.Msg.Email, role)
+	invitation, err := h.service.InviteMember(ctx, claims.OrgID, claims.UserID, req.Msg.Email, role)
 	if err != nil {
+		if errors.Is(err, ErrAlreadyMember) {
+			return nil, connect.NewError(connect.CodeAlreadyExists, err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	return connect.NewResponse(&organizationv1.InviteOrgMemberResponse{
+		Invitation: invitationToProto(invitation),
+	}), nil
+}
+
+func (h *ConnectHandler) AcceptInvitation(ctx context.Context, req *connect.Request[organizationv1.AcceptInvitationRequest]) (*connect.Response[organizationv1.AcceptInvitationResponse], error) {
+	claims, err := h.extractClaims(ctx, req.Header().Get("Authorization"))
+	if err != nil {
+		return nil, err
+	}
+
+	member, err := h.service.AcceptInvitation(ctx, req.Msg.Token, claims.UserID)
+	if err != nil {
+		if errors.Is(err, ErrInvitationNotFound) {
+			return nil, connect.NewError(connect.CodeNotFound, err)
+		}
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&organizationv1.AcceptInvitationResponse{
 		Member: memberToProto(member),
+	}), nil
+}
+
+func (h *ConnectHandler) GetInvitation(ctx context.Context, req *connect.Request[organizationv1.GetInvitationRequest]) (*connect.Response[organizationv1.GetInvitationResponse], error) {
+	invitation, err := h.service.GetInvitationByToken(ctx, req.Msg.Token)
+	if err != nil {
+		if errors.Is(err, ErrInvitationNotFound) {
+			return nil, connect.NewError(connect.CodeNotFound, err)
+		}
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&organizationv1.GetInvitationResponse{
+		Invitation: invitationToProto(invitation),
+	}), nil
+}
+
+func (h *ConnectHandler) ListInvitations(ctx context.Context, req *connect.Request[organizationv1.ListInvitationsRequest]) (*connect.Response[organizationv1.ListInvitationsResponse], error) {
+	claims, err := h.extractClaims(ctx, req.Header().Get("Authorization"))
+	if err != nil {
+		return nil, err
+	}
+
+	invitations, err := h.service.ListInvitations(ctx, claims.OrgID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	protoInvitations := make([]*organizationv1.OrgInvitation, len(invitations))
+	for i, inv := range invitations {
+		protoInvitations[i] = invitationToProto(&inv)
+	}
+
+	return connect.NewResponse(&organizationv1.ListInvitationsResponse{
+		Invitations: protoInvitations,
+	}), nil
+}
+
+func (h *ConnectHandler) RevokeInvitation(ctx context.Context, req *connect.Request[organizationv1.RevokeInvitationRequest]) (*connect.Response[organizationv1.RevokeInvitationResponse], error) {
+	claims, err := h.extractClaims(ctx, req.Header().Get("Authorization"))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := h.service.RevokeInvitation(ctx, claims.OrgID, req.Msg.InvitationId); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&organizationv1.RevokeInvitationResponse{}), nil
+}
+
+func (h *ConnectHandler) SetAllowedDomains(ctx context.Context, req *connect.Request[organizationv1.SetAllowedDomainsRequest]) (*connect.Response[organizationv1.SetAllowedDomainsResponse], error) {
+	claims, err := h.extractClaims(ctx, req.Header().Get("Authorization"))
+	if err != nil {
+		return nil, err
+	}
+
+	org, err := h.service.SetAllowedDomains(ctx, claims.OrgID, req.Msg.Domains)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&organizationv1.SetAllowedDomainsResponse{
+		Organization: orgToProto(org),
 	}), nil
 }
 
@@ -204,9 +290,27 @@ func memberToProto(m *models.OrganizationMember) *organizationv1.OrganizationMem
 
 func orgToProto(o *models.Organization) *organizationv1.Organization {
 	return &organizationv1.Organization{
-		Id:        o.ID,
-		Name:      o.Name,
-		Slug:      o.Slug,
-		CreatedAt: timestamppb.New(o.CreatedAt),
+		Id:             o.ID,
+		Name:           o.Name,
+		Slug:           o.Slug,
+		AllowedDomains: o.AllowedDomains,
+		CreatedAt:      timestamppb.New(o.CreatedAt),
 	}
+}
+
+func invitationToProto(inv *models.OrgInvitation) *organizationv1.OrgInvitation {
+	proto := &organizationv1.OrgInvitation{
+		Id:             inv.ID,
+		OrganizationId: inv.OrganizationID,
+		Email:          inv.Email,
+		Role:           string(inv.Role),
+		Token:          inv.Token,
+		Status:         string(inv.Status),
+		ExpiresAt:      timestamppb.New(inv.ExpiresAt),
+		CreatedAt:      timestamppb.New(inv.CreatedAt),
+	}
+	if inv.Organization != nil {
+		proto.Organization = orgToProto(inv.Organization)
+	}
+	return proto
 }

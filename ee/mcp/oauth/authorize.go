@@ -15,13 +15,32 @@ import (
 )
 
 type AuthorizeHandler struct {
-	db         *bun.DB
-	jwtManager *auth.JWTManager
-	baseURL    string
+	db             *bun.DB
+	jwtManager     *auth.JWTManager
+	baseURL        string
+	newAuthService func() oauthSessionService
+}
+
+const (
+	oauthAccessCookieName  = "colign_token"
+	oauthRefreshCookieName = "colign_refresh_token"
+)
+
+type oauthSessionService interface {
+	Login(ctx context.Context, req auth.LoginRequest) (*auth.TokenPair, error)
+	RefreshToken(ctx context.Context, refreshToken string) (*auth.TokenPair, error)
 }
 
 func NewAuthorizeHandler(db *bun.DB, jwtManager *auth.JWTManager, baseURL string) *AuthorizeHandler {
-	return &AuthorizeHandler{db: db, jwtManager: jwtManager, baseURL: baseURL}
+	h := &AuthorizeHandler{
+		db:         db,
+		jwtManager: jwtManager,
+		baseURL:    baseURL,
+	}
+	h.newAuthService = func() oauthSessionService {
+		return auth.NewService(h.db, h.jwtManager)
+	}
+	return h
 }
 
 // ServeHTTP handles GET /oauth/authorize.
@@ -43,19 +62,14 @@ func (h *AuthorizeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check for existing auth cookie
-	cookie, err := r.Cookie("colign_token")
-	if err == nil && cookie.Value != "" {
-		claims, err := h.jwtManager.ValidateAccessToken(cookie.Value)
-		if err == nil {
-			// User is authenticated — handle consent
-			if r.Method == http.MethodPost {
-				h.handleConsent(w, r, claims, clientID, redirectURI, state, codeChallenge)
-				return
-			}
-			h.showConsentPage(w, claims, clientID, redirectURI, state, codeChallenge)
+	if claims := h.authenticateOAuthSession(w, r); claims != nil {
+		// User is authenticated — handle consent
+		if r.Method == http.MethodPost {
+			h.handleConsent(w, r, claims, clientID, redirectURI, state, codeChallenge)
 			return
 		}
+		h.showConsentPage(w, claims, clientID, redirectURI, state, codeChallenge)
+		return
 	}
 
 	// Handle login form submission
@@ -72,8 +86,7 @@ func (h *AuthorizeHandler) handleLogin(w http.ResponseWriter, r *http.Request, c
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 
-	authService := auth.NewService(h.db, h.jwtManager)
-	tokenPair, err := authService.Login(r.Context(), auth.LoginRequest{
+	tokenPair, err := h.newAuthService().Login(r.Context(), auth.LoginRequest{
 		Email:    email,
 		Password: password,
 	})
@@ -82,19 +95,75 @@ func (h *AuthorizeHandler) handleLogin(w http.ResponseWriter, r *http.Request, c
 		return
 	}
 
-	// Set auth cookie
+	h.setOAuthSessionCookies(w, tokenPair)
+
+	claims, _ := h.jwtManager.ValidateAccessToken(tokenPair.AccessToken)
+	h.showConsentPage(w, claims, clientID, redirectURI, state, codeChallenge)
+}
+
+func (h *AuthorizeHandler) authenticateOAuthSession(w http.ResponseWriter, r *http.Request) *auth.Claims {
+	accessCookie, err := r.Cookie(oauthAccessCookieName)
+	if err == nil && accessCookie.Value != "" {
+		claims, err := h.jwtManager.ValidateAccessToken(accessCookie.Value)
+		if err == nil {
+			return claims
+		}
+	}
+
+	refreshCookie, err := r.Cookie(oauthRefreshCookieName)
+	if err != nil || refreshCookie.Value == "" {
+		return nil
+	}
+
+	tokenPair, err := h.newAuthService().RefreshToken(r.Context(), refreshCookie.Value)
+	if err != nil {
+		h.clearOAuthSessionCookies(w)
+		return nil
+	}
+
+	h.setOAuthSessionCookies(w, tokenPair)
+	claims, err := h.jwtManager.ValidateAccessToken(tokenPair.AccessToken)
+	if err != nil {
+		h.clearOAuthSessionCookies(w)
+		return nil
+	}
+	return claims
+}
+
+func (h *AuthorizeHandler) setOAuthSessionCookies(w http.ResponseWriter, tokenPair *auth.TokenPair) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "colign_token",
+		Name:     oauthAccessCookieName,
 		Value:    tokenPair.AccessToken,
 		Path:     "/oauth",
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   900, // 15 minutes
+		MaxAge:   int(auth.AccessTokenDuration / time.Second),
 	})
 
-	claims, _ := h.jwtManager.ValidateAccessToken(tokenPair.AccessToken)
-	h.showConsentPage(w, claims, clientID, redirectURI, state, codeChallenge)
+	http.SetCookie(w, &http.Cookie{
+		Name:     oauthRefreshCookieName,
+		Value:    tokenPair.RefreshToken,
+		Path:     "/oauth",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   int(auth.RefreshTokenDuration / time.Second),
+	})
+}
+
+func (h *AuthorizeHandler) clearOAuthSessionCookies(w http.ResponseWriter) {
+	for _, name := range []string{oauthAccessCookieName, oauthRefreshCookieName} {
+		http.SetCookie(w, &http.Cookie{
+			Name:     name,
+			Value:    "",
+			Path:     "/oauth",
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   -1,
+		})
+	}
 }
 
 func (h *AuthorizeHandler) handleConsent(w http.ResponseWriter, r *http.Request, claims *auth.Claims, clientID, redirectURI, state, codeChallenge string) {

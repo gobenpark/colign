@@ -24,13 +24,26 @@ var (
 	ErrUserNotFound        = errors.New("user not found")
 )
 
+// OrgJoiner handles auto-joining organizations on registration.
+type OrgJoiner interface {
+	// AutoJoinOrgs joins the user to orgs matching their email domain or pending invitations.
+	// Returns the first org ID joined, or 0 if none.
+	AutoJoinOrgs(ctx context.Context, userID int64, email string) (int64, error)
+}
+
 type Service struct {
 	db         *bun.DB
 	jwtManager *JWTManager
+	orgJoiner  OrgJoiner
 }
 
 func NewService(db *bun.DB, jwtManager *JWTManager) *Service {
 	return &Service{db: db, jwtManager: jwtManager}
+}
+
+// SetOrgJoiner sets the OrgJoiner after construction to avoid circular dependency.
+func (s *Service) SetOrgJoiner(oj OrgJoiner) {
+	s.orgJoiner = oj
 }
 
 type RegisterRequest struct {
@@ -75,29 +88,6 @@ func (s *Service) Register(ctx context.Context, req RegisterRequest) (*TokenPair
 		return nil, err
 	}
 
-	// Create organization
-	orgName := req.OrganizationName
-	if orgName == "" {
-		orgName = fmt.Sprintf("%s's Workspace", req.Name)
-	}
-	orgSlug := generateOrgSlug(orgName)
-	org := &models.Organization{
-		Name: orgName,
-		Slug: orgSlug,
-	}
-	if _, err := tx.NewInsert().Model(org).Exec(ctx); err != nil {
-		return nil, err
-	}
-
-	orgMember := &models.OrganizationMember{
-		OrganizationID: org.ID,
-		UserID:         user.ID,
-		Role:           models.OrgRoleOwner,
-	}
-	if _, err := tx.NewInsert().Model(orgMember).Exec(ctx); err != nil {
-		return nil, err
-	}
-
 	// Generate verification token
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
@@ -119,7 +109,37 @@ func (s *Service) Register(ctx context.Context, req RegisterRequest) (*TokenPair
 
 	// TODO: send verification email
 
-	return s.createSession(ctx, user, org.ID)
+	// Try auto-joining existing orgs via domain or invitation
+	var orgID int64
+	if s.orgJoiner != nil {
+		orgID, _ = s.orgJoiner.AutoJoinOrgs(ctx, user.ID, req.Email)
+	}
+
+	// If no org was joined, create a personal workspace
+	if orgID == 0 {
+		orgName := req.OrganizationName
+		if orgName == "" {
+			orgName = fmt.Sprintf("%s's Workspace", req.Name)
+		}
+		org := &models.Organization{
+			Name: orgName,
+			Slug: generateOrgSlug(orgName),
+		}
+		if _, err := s.db.NewInsert().Model(org).Exec(ctx); err != nil {
+			return nil, err
+		}
+		orgMember := &models.OrganizationMember{
+			OrganizationID: org.ID,
+			UserID:         user.ID,
+			Role:           models.OrgRoleOwner,
+		}
+		if _, err := s.db.NewInsert().Model(orgMember).Exec(ctx); err != nil {
+			return nil, err
+		}
+		orgID = org.ID
+	}
+
+	return s.createSession(ctx, user, orgID)
 }
 
 func generateOrgSlug(name string) string {
@@ -215,7 +235,6 @@ func (s *Service) getOrCreateDefaultOrg(ctx context.Context, user *models.User) 
 func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (*TokenPair, error) {
 	session := new(models.Session)
 	err := s.db.NewSelect().Model(session).
-		Relation("User").
 		Where("s.refresh_token = ?", refreshToken).
 		Where("s.expires_at > ?", time.Now()).
 		Scan(ctx)
@@ -226,17 +245,22 @@ func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (*Token
 		return nil, err
 	}
 
+	user := new(models.User)
+	if err := s.db.NewSelect().Model(user).Where("id = ?", session.UserID).Scan(ctx); err != nil {
+		return nil, err
+	}
+
 	// Delete old session
 	if _, err := s.db.NewDelete().Model(session).WherePK().Exec(ctx); err != nil {
 		return nil, err
 	}
 
-	orgID, err := s.getOrCreateDefaultOrg(ctx, session.User)
+	orgID, err := s.getOrCreateDefaultOrg(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.createSession(ctx, session.User, orgID)
+	return s.createSession(ctx, user, orgID)
 }
 
 func (s *Service) VerifyEmail(ctx context.Context, token string) error {

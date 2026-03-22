@@ -28,14 +28,16 @@ type OAuthConfig struct {
 type OAuthService struct {
 	db         *bun.DB
 	jwtManager *JWTManager
+	orgJoiner  OrgJoiner
 	github     *oauth2.Config
 	google     *oauth2.Config
 }
 
-func NewOAuthService(db *bun.DB, jwtManager *JWTManager, cfg OAuthConfig) *OAuthService {
+func NewOAuthService(db *bun.DB, jwtManager *JWTManager, cfg OAuthConfig, orgJoiner OrgJoiner) *OAuthService {
 	return &OAuthService{
 		db:         db,
 		jwtManager: jwtManager,
+		orgJoiner:  orgJoiner,
 		github: &oauth2.Config{
 			ClientID:     cfg.GitHubClientID,
 			ClientSecret: cfg.GitHubClientSecret,
@@ -242,25 +244,32 @@ func (s *OAuthService) findOrCreateUser(ctx context.Context, provider string, in
 		return nil, 0, err
 	}
 
-	// Create org for new OAuth users
 	var orgID int64
 	if isNewUser {
-		org := &models.Organization{
-			Name: fmt.Sprintf("%s's Workspace", info.Name),
-			Slug: fmt.Sprintf("%s-oauth", info.ProviderID),
+		// Try auto-joining existing orgs via domain or invitation
+		if s.orgJoiner != nil {
+			orgID, _ = s.orgJoiner.AutoJoinOrgs(ctx, user.ID, info.Email)
 		}
-		if _, err := s.db.NewInsert().Model(org).Exec(ctx); err != nil {
-			return nil, 0, err
+
+		// If no org was joined, create a personal workspace
+		if orgID == 0 {
+			org := &models.Organization{
+				Name: fmt.Sprintf("%s's Workspace", info.Name),
+				Slug: fmt.Sprintf("%s-oauth", info.ProviderID),
+			}
+			if _, err := s.db.NewInsert().Model(org).Exec(ctx); err != nil {
+				return nil, 0, err
+			}
+			om := &models.OrganizationMember{
+				OrganizationID: org.ID,
+				UserID:         user.ID,
+				Role:           models.OrgRoleOwner,
+			}
+			if _, err := s.db.NewInsert().Model(om).Exec(ctx); err != nil {
+				return nil, 0, err
+			}
+			orgID = org.ID
 		}
-		om := &models.OrganizationMember{
-			OrganizationID: org.ID,
-			UserID:         user.ID,
-			Role:           models.OrgRoleOwner,
-		}
-		if _, err := s.db.NewInsert().Model(om).Exec(ctx); err != nil {
-			return nil, 0, err
-		}
-		orgID = org.ID
 	} else {
 		orgID = s.getDefaultOrgID(ctx, user.ID)
 	}

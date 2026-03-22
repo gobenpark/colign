@@ -27,7 +27,13 @@ export default function AuthPage() {
     try {
       const res = await authClient.login({ email, password });
       saveTokens(res.accessToken, res.refreshToken);
-      router.push("/projects");
+      const pendingInvite = sessionStorage.getItem("pending_invite_token");
+      if (pendingInvite) {
+        sessionStorage.removeItem("pending_invite_token");
+        router.push(`/invite/${pendingInvite}`);
+      } else {
+        router.push("/projects");
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -42,7 +48,13 @@ export default function AuthPage() {
     try {
       const res = await authClient.register({ email, password, name });
       saveTokens(res.accessToken, res.refreshToken);
-      router.push("/onboarding");
+      const pendingInvite = sessionStorage.getItem("pending_invite_token");
+      if (pendingInvite) {
+        sessionStorage.removeItem("pending_invite_token");
+        router.push(`/invite/${pendingInvite}`);
+      } else {
+        router.push("/onboarding");
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {

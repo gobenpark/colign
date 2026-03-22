@@ -1,5 +1,7 @@
 package middleware
 
+//go:generate mockgen -destination mock_token_validator_test.go -package middleware github.com/gobenpark/colign/internal/middleware TokenValidator
+
 import (
 	"context"
 	"net/http"
@@ -16,7 +18,13 @@ const (
 	ContextKeyOrgID  contextKey = "org_id"
 )
 
-func JWTAuth(jwtManager *auth.JWTManager) func(http.Handler) http.Handler {
+// TokenValidator validates a JWT token string and returns claims.
+// *auth.JWTManager satisfies this interface.
+type TokenValidator interface {
+	ValidateAccessToken(tokenStr string) (*auth.Claims, error)
+}
+
+func JWTAuth(validator TokenValidator) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			header := r.Header.Get("Authorization")
@@ -31,7 +39,7 @@ func JWTAuth(jwtManager *auth.JWTManager) func(http.Handler) http.Handler {
 				return
 			}
 
-			claims, err := jwtManager.ValidateAccessToken(parts[1])
+			claims, err := validator.ValidateAccessToken(parts[1])
 			if err != nil {
 				http.Error(w, `{"error":"invalid or expired token"}`, http.StatusUnauthorized)
 				return

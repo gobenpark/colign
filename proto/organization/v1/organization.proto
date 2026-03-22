@@ -11,6 +11,7 @@ message Organization {
   string name = 2;
   string slug = 3;
   google.protobuf.Timestamp created_at = 4;
+  repeated string allowed_domains = 5;
 }
 
 message OrganizationMember {
@@ -65,9 +66,53 @@ message InviteOrgMemberRequest {
   string role = 2; // "owner", "admin", "member"
 }
 
+message OrgInvitation {
+  int64 id = 1;
+  int64 organization_id = 2;
+  string email = 3;
+  string role = 4;
+  string token = 5;
+  string status = 6;
+  google.protobuf.Timestamp expires_at = 7;
+  google.protobuf.Timestamp created_at = 8;
+  Organization organization = 9;
+}
+
 message InviteOrgMemberResponse {
+  OrgInvitation invitation = 1;
+}
+
+// Accept an invitation by token
+message AcceptInvitationRequest {
+  string token = 1;
+}
+
+message AcceptInvitationResponse {
   OrganizationMember member = 1;
 }
+
+// Get invitation details by token (public, no auth required)
+message GetInvitationRequest {
+  string token = 1;
+}
+
+message GetInvitationResponse {
+  OrgInvitation invitation = 1;
+}
+
+// List pending invitations for the current organization
+message ListInvitationsRequest {}
+
+message ListInvitationsResponse {
+  repeated OrgInvitation invitations = 1;
+}
+
+// Revoke a pending invitation
+message RevokeInvitationRequest {
+  int64 invitation_id = 1;
+}
+
+message RevokeInvitationResponse {}
 
 // Remove a member from the organization
 message RemoveOrgMemberRequest {
@@ -86,12 +131,26 @@ message UpdateOrgMemberRoleResponse {
   OrganizationMember member = 1;
 }
 
+// Set allowed email domains for auto-join
+message SetAllowedDomainsRequest {
+  repeated string domains = 1;
+}
+
+message SetAllowedDomainsResponse {
+  Organization organization = 1;
+}
+
 service OrganizationService {
   rpc ListOrganizations(ListOrganizationsRequest) returns (ListOrganizationsResponse) {}
   rpc SwitchOrganization(SwitchOrganizationRequest) returns (SwitchOrganizationResponse) {}
   rpc UpdateOrganization(UpdateOrganizationRequest) returns (UpdateOrganizationResponse) {}
   rpc ListMembers(ListMembersRequest) returns (ListMembersResponse) {}
   rpc InviteOrgMember(InviteOrgMemberRequest) returns (InviteOrgMemberResponse) {}
+  rpc AcceptInvitation(AcceptInvitationRequest) returns (AcceptInvitationResponse) {}
+  rpc GetInvitation(GetInvitationRequest) returns (GetInvitationResponse) {}
+  rpc ListInvitations(ListInvitationsRequest) returns (ListInvitationsResponse) {}
+  rpc RevokeInvitation(RevokeInvitationRequest) returns (RevokeInvitationResponse) {}
   rpc RemoveOrgMember(RemoveOrgMemberRequest) returns (RemoveOrgMemberResponse) {}
   rpc UpdateOrgMemberRole(UpdateOrgMemberRoleRequest) returns (UpdateOrgMemberRoleResponse) {}
+  rpc SetAllowedDomains(SetAllowedDomainsRequest) returns (SetAllowedDomainsResponse) {}
 }

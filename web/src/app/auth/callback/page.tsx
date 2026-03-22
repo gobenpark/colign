@@ -14,7 +14,14 @@ export default function AuthCallbackPage() {
 
     if (accessToken && refreshToken) {
       saveTokens(accessToken, refreshToken);
-      router.push("/");
+      // Check for pending invitation
+      const pendingInvite = sessionStorage.getItem("pending_invite_token");
+      if (pendingInvite) {
+        sessionStorage.removeItem("pending_invite_token");
+        router.push(`/invite/${pendingInvite}`);
+      } else {
+        router.push("/");
+      }
     } else {
       router.push("/auth");
     }

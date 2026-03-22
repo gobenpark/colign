@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/uptrace/bun"
@@ -16,6 +17,8 @@ import (
 type Service struct {
 	db *bun.DB
 }
+
+const oauthTokenRetention = 30 * 24 * time.Hour
 
 func NewService(db *bun.DB) *Service {
 	return &Service{db: db}
@@ -35,33 +38,49 @@ func hashToken(raw string) string {
 }
 
 func (s *Service) Create(ctx context.Context, userID, orgID int64, name string) (*models.APIToken, string, error) {
-	return s.createWithType(ctx, userID, orgID, name, "personal")
+	return s.createWithType(ctx, userID, orgID, "", name, "personal")
 }
 
-func (s *Service) CreateOAuth(ctx context.Context, userID, orgID int64, name string) (*models.APIToken, string, error) {
-	// Remove existing OAuth tokens for this user+org to prevent accumulation
+func (s *Service) CreateOAuth(ctx context.Context, userID, orgID int64, clientID, name string) (*models.APIToken, string, error) {
+	clientID = strings.TrimSpace(clientID)
+	if clientID == "" {
+		return nil, "", fmt.Errorf("oauth client id is required")
+	}
+
+	// Replace the token for the same MCP client without invalidating other active clients.
 	_, _ = s.db.NewDelete().Model((*models.APIToken)(nil)).
 		Where("user_id = ?", userID).
 		Where("org_id = ?", orgID).
 		Where("token_type = ?", "oauth").
+		Where("oauth_client_id = ?", clientID).
 		Exec(ctx)
 
-	return s.createWithType(ctx, userID, orgID, name, "oauth")
+	// Opportunistically prune stale OAuth tokens so they do not accumulate forever.
+	cutoff := time.Now().Add(-oauthTokenRetention)
+	_, _ = s.db.NewDelete().Model((*models.APIToken)(nil)).
+		Where("user_id = ?", userID).
+		Where("org_id = ?", orgID).
+		Where("token_type = ?", "oauth").
+		Where("COALESCE(last_used_at, created_at) < ?", cutoff).
+		Exec(ctx)
+
+	return s.createWithType(ctx, userID, orgID, clientID, name, "oauth")
 }
 
-func (s *Service) createWithType(ctx context.Context, userID, orgID int64, name, tokenType string) (*models.APIToken, string, error) {
+func (s *Service) createWithType(ctx context.Context, userID, orgID int64, clientID, name, tokenType string) (*models.APIToken, string, error) {
 	raw, err := generateToken()
 	if err != nil {
 		return nil, "", err
 	}
 
 	token := &models.APIToken{
-		UserID:    userID,
-		OrgID:     orgID,
-		Name:      name,
-		TokenType: tokenType,
-		TokenHash: hashToken(raw),
-		Prefix:    raw[:8],
+		UserID:        userID,
+		OrgID:         orgID,
+		Name:          name,
+		TokenType:     tokenType,
+		OAuthClientID: clientID,
+		TokenHash:     hashToken(raw),
+		Prefix:        raw[:8],
 	}
 
 	if _, err := s.db.NewInsert().Model(token).Exec(ctx); err != nil {

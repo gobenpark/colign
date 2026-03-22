@@ -9,6 +9,43 @@ const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 // Transport without interceptor for refresh calls (avoid infinite loop)
 const plainTransport = createConnectTransport({ baseUrl });
 
+let refreshPromise: Promise<string | null> | null = null;
+
+function isUnauthenticatedError(err: unknown): err is Error & { code: number } {
+  return err instanceof Error && "code" in err && (err as { code: number }).code === 16;
+}
+
+async function refreshAccessToken(): Promise<string | null> {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = (async () => {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) {
+      clearTokens();
+      return null;
+    }
+
+    try {
+      const refreshClient = createClient(AuthService, plainTransport);
+      const res = await refreshClient.refreshToken({ refreshToken });
+      saveTokens(res.accessToken, res.refreshToken);
+      return res.accessToken;
+    } catch {
+      // Only clear when the token in storage is still the one that just failed.
+      if (getRefreshToken() === refreshToken) {
+        clearTokens();
+      }
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
 const authInterceptor: Interceptor = (next) => async (req) => {
   const token = getAccessToken();
   if (token) {
@@ -19,26 +56,17 @@ const authInterceptor: Interceptor = (next) => async (req) => {
     return await next(req);
   } catch (err: unknown) {
     // If unauthorized, try refresh
-    if (
-      err instanceof Error &&
-      "code" in err &&
-      (err as { code: number }).code === 16 // Unauthenticated
-    ) {
-      const refreshToken = getRefreshToken();
-      if (refreshToken) {
-        try {
-          const refreshClient = createClient(AuthService, plainTransport);
-          const res = await refreshClient.refreshToken({ refreshToken });
-          saveTokens(res.accessToken, res.refreshToken);
+    if (isUnauthenticatedError(err)) {
+      const latestToken = getAccessToken();
+      if (token && latestToken && latestToken !== token) {
+        req.header.set("Authorization", `Bearer ${latestToken}`);
+        return await next(req);
+      }
 
-          // Retry original request with new token
-          req.header.set("Authorization", `Bearer ${res.accessToken}`);
-          return await next(req);
-        } catch {
-          clearTokens();
-        }
-      } else {
-        clearTokens();
+      const refreshedToken = await refreshAccessToken();
+      if (refreshedToken) {
+        req.header.set("Authorization", `Bearer ${refreshedToken}`);
+        return await next(req);
       }
     }
     throw err;

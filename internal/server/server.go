@@ -82,15 +82,19 @@ func (s *Server) setupRoutes(cfg *config.Config) {
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok", "db": "connected"})
 	})
 
+	// Organization service (created early for OrgJoiner injection)
+	orgService := organization.NewService(s.db)
+
 	// Auth service (Connect)
 	authService := auth.NewService(s.db, s.jwtManager)
+	authService.SetOrgJoiner(orgService)
 	oauthService := auth.NewOAuthService(s.db, s.jwtManager, auth.OAuthConfig{
 		GitHubClientID:     cfg.GitHubClientID,
 		GitHubClientSecret: cfg.GitHubClientSecret,
 		GoogleClientID:     cfg.GoogleClientID,
 		GoogleClientSecret: cfg.GoogleClientSecret,
 		RedirectBaseURL:    cfg.RedirectBaseURL,
-	})
+	}, orgService)
 
 	authConnectHandler := auth.NewConnectHandler(authService, oauthService)
 	authPath, authHandler := authv1connect.NewAuthServiceHandler(authConnectHandler)
@@ -113,8 +117,7 @@ func (s *Server) setupRoutes(cfg *config.Config) {
 	projectPath, projectHandler := projectv1connect.NewProjectServiceHandler(projectConnectHandler)
 	s.mux.Handle(projectPath, projectHandler)
 
-	// Organization service (Connect)
-	orgService := organization.NewService(s.db)
+	// Organization service (Connect handler)
 	orgConnectHandler := organization.NewConnectHandler(orgService, s.jwtManager, apiTokenService)
 	orgPath, orgHandler := organizationv1connect.NewOrganizationServiceHandler(orgConnectHandler)
 	s.mux.Handle(orgPath, orgHandler)
